@@ -140,6 +140,34 @@ function normalizeRiskInput(raw: any): RiskInputData | null {
   return { amount, income, contract, relationship, deadline };
 }
 
+function deriveMissingQuestion(data: any, analysisType: AnalysisType): string {
+  const amount = data?.amount;
+  const income = data?.income;
+  const contract = data?.contract;
+  const relationship = data?.relationship;
+  const deadline = data?.deadline;
+
+  const amountOk = typeof amount === "number" && Number.isFinite(amount) && amount >= 0;
+  const incomeOk = typeof income === "number" && Number.isFinite(income) && income >= 0;
+  const contractOk = typeof contract === "boolean";
+  const relationshipOk =
+    relationship === "known" || relationship === "unknown" || typeof relationship === "string";
+  const deadlineOk = typeof deadline === "number" && Number.isFinite(deadline) && deadline >= 0;
+
+  // Keep order aligned with our scoring input.
+  if (!amountOk) return "What is the total amount (in dollars) for this decision?";
+  if (!incomeOk) return "What is the borrower's monthly income (in dollars)?";
+  if (!contractOk) return `Is there a formal written contract or agreement for this ${analysisType}?`;
+  if (!relationshipOk) {
+    return "Is the counterparty someone you know/trust? Reply with known or unknown.";
+  }
+  if (!deadlineOk) {
+    return "What is the repayment/deadline time in days?";
+  }
+
+  return "Please provide the missing details.";
+}
+
 function buildSystemPrompt(base: string, unit?: UnitContext, mode?: ChatMode) {
   const unitTitle = unit?.title?.trim();
   const unitFocus = unit?.focus?.trim();
@@ -238,17 +266,18 @@ export async function POST(req: NextRequest) {
 
     const status = parsed?.status;
     if (status === "question") {
-      const question = typeof parsed?.question === "string" ? parsed.question : "Please provide the missing details.";
+      const question = typeof parsed?.question === "string" && parsed.question.trim().length > 0
+        ? parsed.question
+        : deriveMissingQuestion(parsed?.data, parseAnalysisType(analysisType));
       return NextResponse.json({ text: question });
     }
 
     if (status === "scored") {
       const normalized = normalizeRiskInput(parsed?.data);
       if (!normalized) {
-        return NextResponse.json(
-          { error: "AI returned invalid scoring input" },
-          { status: 400 }
-        );
+        // If the model jumped to "scored" but didn't provide all fields, recover gracefully by asking.
+        const nextQ = deriveMissingQuestion(parsed?.data, parseAnalysisType(analysisType));
+        return NextResponse.json({ text: nextQ });
       }
 
       const scoring = calculateRisk(normalized);
