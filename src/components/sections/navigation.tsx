@@ -1,8 +1,9 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
-import { BookOpen, Globe, ChevronDown, Menu, X, Sparkles, Check, LogOut, Shield, User } from "lucide-react";
+import { Globe, ChevronDown, Menu, X, Sparkles, Check, LogOut, Shield, User } from "lucide-react";
 import Link from "next/link";
+import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
 import { useLanguage } from "@/lib/language-context";
 import { Language } from "@/lib/translations";
@@ -75,13 +76,15 @@ const Navigation = () => {
           }`}
         >
           {/* Logo */}
-          <Link href="/" className="flex items-center gap-2 group">
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 transition-transform group-hover:scale-105">
-              <BookOpen className="h-5 w-5 text-white" />
-            </div>
-            <span className="text-lg font-semibold tracking-tight text-white">
-              Zinvest
-            </span>
+          <Link href="/" className="group">
+            <Image
+              src="/zinvest-logo.svg"
+              alt="Zinvest"
+              width={160}
+              height={46}
+              priority
+              className="h-9 w-auto transition-transform group-hover:scale-[1.02]"
+            />
           </Link>
 
           {/* Desktop Navigation Links */}

@@ -11,6 +11,11 @@ export const metadata: Metadata = {
   title: "Zinvest — Your AI Financial Assistant",
   description: "Learn finance from scratch with AI-powered education. Zinvest helps students, young professionals, and founders understand money, business, and investing — step by step.",
   keywords: ["finance", "AI", "financial education", "investing", "money management", "fintech"],
+  icons: {
+    icon: "/zinvest-mark.svg",
+    shortcut: "/zinvest-mark.svg",
+    apple: "/zinvest-mark.svg",
+  },
 };
 
 export default function RootLayout({

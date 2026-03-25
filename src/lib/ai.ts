@@ -1,6 +1,7 @@
 import type { Language } from "@/lib/translations";
 import type { AnalyzeAnswers, RiskScoringResult, AnalysisType } from "./scoring";
 import type { SimulationResult } from "./simulation";
+import type { ContradictionResult } from "./contradictions";
 
 export type RiskAIOutput = {
   dealRisk: number;
@@ -43,12 +44,14 @@ type GenerateRiskAIExplanationParams = {
   answers: AnalyzeAnswers;
   scoring: RiskScoringResult;
   simulation?: SimulationResult | null;
+  contradictions?: ContradictionResult | null;
+  behavioralRisk?: number;
 };
 
 export async function generateRiskAIExplanation(
   params: GenerateRiskAIExplanationParams
 ): Promise<RiskAIOutput | null> {
-  const { language, analysisType, answers, scoring, simulation } = params;
+  const { language, analysisType, answers, scoring, simulation, contradictions, behavioralRisk } = params;
 
   const openaiKey = process.env.OPENAI_API_KEY?.trim();
   const openaiBaseUrl = process.env.OPENAI_API_BASE_URL?.trim() || "https://api.openai.com";
@@ -65,6 +68,10 @@ export async function generateRiskAIExplanation(
     verdict: scoring.verdict,
     confidence: scoring.confidence,
     interactionBonus: scoring.interactionBonus,
+    layers: scoring.layers,
+    contradictionPenalty: contradictions?.penalty ?? 0,
+    contradictions: contradictions?.contradictions ?? [],
+    behavioralRisk: behavioralRisk ?? scoring.layers.behavioral,
     reasons: scoring.keyRisks.length ? scoring.keyRisks : scoring.reasons,
     recommendations: scoring.recommendations,
     explanation: scoring.explanation,
@@ -113,6 +120,7 @@ ${JSON.stringify(deterministicPayload)}
 
 Return strict JSON schema exactly.
 Consider worst-case scenarios and combined risks.
+Explain which factors dominate and what to fix first.
 `;
 
   const normalizeVerdict = (v: unknown): "SAFE" | "CAUTION" | "HIGH RISK" => {

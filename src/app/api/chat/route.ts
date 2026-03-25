@@ -3,9 +3,14 @@ import { getSupabase } from "@/lib/supabase";
 import { calculateRisk } from "../../../lib/scoring";
 import type { RiskInputData, AnalyzeAnswers } from "../../../lib/scoring";
 import { generateRiskAIExplanation } from "@/lib/ai";
-import { generateFollowUpQuestions } from "@/lib/aiQuestions";
+import { generateFollowUpQuestions, generateAdaptiveQuestion } from "@/lib/aiQuestions";
 import { questions } from "@/lib/questions";
 import { simulateScenarios } from "@/lib/simulation";
+import { detectContradictions } from "@/lib/contradictions";
+import { evaluateBehavioralRisk } from "@/lib/behavior";
+import { calculateConfidence } from "@/lib/confidence";
+import { detectScenario, type DetectedScenario } from "@/lib/scenarioDetector";
+import { questionTrees } from "@/lib/questionTrees";
 import type { Language } from "@/lib/translations";
 
 type ChatMode = "finance" | "general" | "analyze";
@@ -32,6 +37,72 @@ function parseAnalysisType(raw: unknown): AnalysisType {
   )
     return v;
   return "loan";
+}
+
+function inferAnalysisTypeFromMessages(
+  messages: Array<{ role: "user" | "assistant"; content: string }>,
+  fallback: AnalysisType
+): AnalysisType {
+  const userSeed = messages
+    .filter((m) => m.role === "user")
+    .map((m) => (m.content || "").toLowerCase())
+    .join(" ");
+
+  // Installment / pay later
+  if (
+    userSeed.includes("рассроч") ||
+    userSeed.includes("в рассрочку") ||
+    userSeed.includes("installment") ||
+    userSeed.includes("pay later") ||
+    userSeed.includes("bo'lib") ||
+    userSeed.includes("muddatli")
+  ) {
+    return "installment";
+  }
+
+  // Investment
+  if (
+    userSeed.includes("инвест") ||
+    userSeed.includes("investment") ||
+    userSeed.includes("investits")
+  ) {
+    return "invest";
+  }
+
+  // Purchase / order
+  if (
+    userSeed.includes("купить") ||
+    userSeed.includes("покупк") ||
+    userSeed.includes("заказ") ||
+    userSeed.includes("purchase") ||
+    userSeed.includes("order") ||
+    userSeed.includes("sotib")
+  ) {
+    return "purchase";
+  }
+
+  // Loan / lend
+  if (
+    userSeed.includes("займ") ||
+    userSeed.includes("одолж") ||
+    userSeed.includes("loan") ||
+    userSeed.includes("lend") ||
+    userSeed.includes("qarz")
+  ) {
+    return "loan";
+  }
+
+  return fallback;
+}
+
+function mapDetectedScenarioToAnalysisType(
+  detected: DetectedScenario
+): AnalysisType {
+  if (detected === "installment") return "installment";
+  if (detected === "lend") return "loan";
+  if (detected === "investment") return "invest";
+  if (detected === "supplier") return "order";
+  return "purchase";
 }
 
 type UnitContext = {
@@ -687,6 +758,41 @@ function parseFirstNumber(raw: string): number | null {
   return Number.isFinite(v) ? v : null;
 }
 
+function parseDurationToDays(raw: string): number | null {
+  const n = parseFirstNumber(raw);
+  if (n === null) return null;
+  const text = normalizeText(raw);
+
+  // years
+  if (
+    text.includes("year") ||
+    text.includes("год") ||
+    text.includes("лет") ||
+    text.includes("yil")
+  ) {
+    return Math.round(n * 365);
+  }
+  // months
+  if (
+    text.includes("month") ||
+    text.includes("месяц") ||
+    text.includes("мес") ||
+    text.includes("oy")
+  ) {
+    return Math.round(n * 30);
+  }
+  // weeks
+  if (
+    text.includes("week") ||
+    text.includes("недел") ||
+    text.includes("hafta")
+  ) {
+    return Math.round(n * 7);
+  }
+  // explicit days or default fallback
+  return Math.round(n);
+}
+
 function parseContract(raw: string): boolean | null {
   const v = normalizeText(raw).replace(/[^\p{L}\p{N}'’-]+/gu, " ");
   const tokensTrue = ["да", "true", "yes", "1", "ha", "ok", "oui", "топ"]; // tolerant
@@ -853,7 +959,7 @@ function extractRiskAnswersFromMessages(
     } else if (fieldId === "income") {
       answers.income = Number(parseFirstNumber(text) ?? NaN);
     } else if (fieldId === "deadline") {
-      answers.deadline = Number(parseFirstNumber(text) ?? NaN);
+      answers.deadline = Number(parseDurationToDays(text) ?? NaN);
     } else if (fieldId === "contract") {
       const v = parseContract(text);
       if (v === null) continue;
@@ -930,14 +1036,35 @@ export async function POST(req: NextRequest) {
     // Deterministic Analyze Risk flow: NO random scoring and NO AI JSON parsing.
     // We ask structured questions step-by-step and compute scores from answers.
     if (resolvedMode === "analyze") {
-      const scenario = parseAnalysisType(analysisType);
+      const parsedScenario = parseAnalysisType(analysisType);
+      const userSeedText = messages
+        .filter((m) => m.role === "user")
+        .map((m) => m.content || "")
+        .join(" ");
+      const detectedScenario = detectScenario(userSeedText);
+      // If scenario was not explicitly selected in UI (falls back to loan),
+      // infer from user free-text to keep question flow context-aware.
+      const scenario =
+        analysisType === undefined || analysisType === null
+          ? mapDetectedScenarioToAnalysisType(detectedScenario)
+          : parsedScenario;
 
       type AnalyzeMissingField =
+        | "item_name"
         | "contract"
         | "contract_reason"
         | "relationship"
         | "identity_verified"
         | "past_defaults"
+        | "monthly_payment"
+        | "existing_debts"
+        | "interest_rate"
+        | "necessity_level"
+        | "loan_purpose"
+        | "expected_return"
+        | "founder_known"
+        | "business_proof"
+        | "revenue_proof"
         | "stable_income_proof"
         | "documentation_completeness"
         | "transparency"
@@ -1039,6 +1166,31 @@ export async function POST(req: NextRequest) {
           if (v.includes("подтвер") || v.includes("verified") || v.includes("tasdiq")) return "verified";
           if (v.includes("частич") || v.includes("partial") || v.includes("qisman")) return "partial";
           if (v.includes("не подтверж") || v.includes("not verified") || v.includes("tasdiqlanmagan") || v.includes("noma'lum")) return "not_verified";
+          // Free-text fallback: user answered in narrative form (not button labels).
+          if (v.length >= 8) {
+            const verificationSignals = [
+              "паспорт",
+              "id",
+              "документ",
+              "договор",
+              "регистрац",
+              "лиценз",
+              "check",
+              "verify",
+              "встреч",
+              "адрес",
+              "телефон",
+              "магаз",
+              "store",
+              "shop",
+              "нашел",
+              "нашёл",
+              "found",
+            ];
+            if (verificationSignals.some((s) => v.includes(s))) return "partial";
+            // Any meaningful narrative answer is treated as at least partial context.
+            return "partial";
+          }
           return null;
         }
 
@@ -1052,6 +1204,19 @@ export async function POST(req: NextRequest) {
           if (v.includes("никог") || v.includes("never")) return "never";
           if (v.includes("один") || v.includes("once") || v.includes("1")) return "once";
           if (v.includes("мног") || v.includes("часто") || v.includes("many") || v.includes("было")) return "many";
+          return null;
+        }
+
+        if (fieldId === "necessity_level") {
+          if (v.includes("необяз") || v.includes("optional") || v.includes("can wait")) return "optional";
+          if (v.includes("нуж") || v.includes("necessary") || v.includes("must")) return "necessary";
+          return null;
+        }
+
+        if (fieldId === "business_proof" || fieldId === "revenue_proof") {
+          if (v.includes("yes") || v.includes("да") || v.includes("ha") || v.includes("пол")) return "yes";
+          if (v.includes("част") || v.includes("partial") || v.includes("qisman")) return "partial";
+          if (v.includes("нет") || v.includes("no") || v.includes("yo'q")) return "no";
           return null;
         }
 
@@ -1101,6 +1266,11 @@ export async function POST(req: NextRequest) {
           return null;
         }
 
+        if (fieldId === "item_name" || fieldId === "loan_purpose" || fieldId === "founder_known") {
+          const text = raw.trim();
+          return text.length >= 2 ? text : null;
+        }
+
         return null;
       };
 
@@ -1119,11 +1289,21 @@ export async function POST(req: NextRequest) {
       };
 
       const canonicalValues: Record<AnalyzeMissingField, string[]> = {
+        item_name: ["text"],
         contract: ["true", "false"],
         contract_reason: ["verbal", "missing_terms", "not_sure"],
         relationship: ["known", "unknown"],
         identity_verified: ["verified", "partial", "not_verified"],
         past_defaults: ["never", "once", "many"],
+        monthly_payment: ["number"],
+        existing_debts: ["number"],
+        interest_rate: ["number"],
+        necessity_level: ["necessary", "optional"],
+        loan_purpose: ["text"],
+        expected_return: ["number"],
+        founder_known: ["text"],
+        business_proof: ["yes", "partial", "no"],
+        revenue_proof: ["yes", "partial", "no"],
         stable_income_proof: ["verified", "partial", "none"],
         documentation_completeness: ["complete", "partial", "none"],
         transparency: ["high", "medium", "low"],
@@ -1181,14 +1361,34 @@ Raw user answer: ${raw}`;
           const value = parsed?.value;
           if (value === null || value === undefined) return null;
 
-          if (fieldId === "amount" || fieldId === "income" || fieldId === "deadline" || fieldId === "savings") {
-            const n = Number(value);
+          if (
+            fieldId === "amount" ||
+            fieldId === "income" ||
+            fieldId === "deadline" ||
+            fieldId === "savings" ||
+            fieldId === "monthly_payment" ||
+            fieldId === "existing_debts" ||
+            fieldId === "interest_rate" ||
+            fieldId === "expected_return"
+          ) {
+            const n =
+              fieldId === "deadline"
+                ? parseDurationToDays(String(value))
+                : Number(value);
             return Number.isFinite(n) ? n : null;
           }
           if (fieldId === "contract" || fieldId === "collateral_provided" || fieldId === "penalty_terms_present" || fieldId === "guaranteed_return") {
             if (value === true || value === "true") return true;
             if (value === false || value === "false") return false;
             return null;
+          }
+          if (
+            fieldId === "item_name" ||
+            fieldId === "loan_purpose" ||
+            fieldId === "founder_known"
+          ) {
+            const s = String(value ?? "").trim();
+            return s.length >= 2 ? s : null;
           }
           return typeof value === "string" ? value : null;
         } catch {
@@ -1202,8 +1402,20 @@ Raw user answer: ${raw}`;
         if (fieldId === "penalty_terms_present") return parseBoolean(raw);
         if (fieldId === "guaranteed_return") return parseBoolean(raw);
         if (fieldId === "relationship") return parseRelationshipFlexible(raw);
-        if (fieldId === "amount" || fieldId === "income" || fieldId === "deadline" || fieldId === "savings") {
-          const n = parseFirstNumber(raw);
+        if (
+          fieldId === "amount" ||
+          fieldId === "income" ||
+          fieldId === "deadline" ||
+          fieldId === "savings" ||
+          fieldId === "monthly_payment" ||
+          fieldId === "existing_debts" ||
+          fieldId === "interest_rate" ||
+          fieldId === "expected_return"
+        ) {
+          const n =
+            fieldId === "deadline"
+              ? parseDurationToDays(raw)
+              : parseFirstNumber(raw);
           return n === null ? null : n;
         }
         // choice
@@ -1211,6 +1423,11 @@ Raw user answer: ${raw}`;
       };
 
       const buildQuestionText = (fieldId: AnalyzeMissingField) => {
+        const treeNode = questionTrees[detectedScenario].find(
+          (q) => q.id === fieldId
+        );
+        if (treeNode) return treeNode.ask(resolvedLanguage);
+
         const ru = (s: string) => s;
         const en = (s: string) => s;
         const uz = (s: string) => s;
@@ -1222,12 +1439,21 @@ Raw user answer: ${raw}`;
             case "contract_reason":
               return en("Why is there no written agreement? Reply with one option.");
             case "relationship":
+              if (scenario === "installment" || scenario === "purchase" || scenario === "order") {
+                return en("Do you know this seller/provider and trust them? Reply: known or unknown.");
+              }
               return en("How many financial interactions have you had with this counterparty? Choose: known or unknown.");
             case "identity_verified":
               return en("Have you verified their identity/registration data? Reply: verified / partial / not verified.");
             case "past_defaults":
+              if (scenario === "installment" || scenario === "purchase" || scenario === "order") {
+                return en("Were there past cases of delivery failure/refund issues with this seller? Reply: never / once / many.");
+              }
               return en("Have they ever been late with payments or failed to repay? Reply: never / once / many.");
             case "stable_income_proof":
+              if (scenario === "installment" || scenario === "purchase" || scenario === "order") {
+                return en("Do you have verifiable proof of your own stable income for this payment plan? Reply: verified / partial / none.");
+              }
               return en("Do they have verifiable and stable income proof? Reply: verified / partial / none.");
             case "documentation_completeness":
               return en("How complete are supporting documents? Reply: complete / partial / none.");
@@ -1263,12 +1489,21 @@ Raw user answer: ${raw}`;
             case "contract_reason":
               return uz("Nega yozma shartnoma yo'q? Variantlardan birini tanlang.");
             case "relationship":
+              if (scenario === "installment" || scenario === "purchase" || scenario === "order") {
+                return uz("Siz ushbu sotuvchi/ta'minotchini taniysizmi va ishonasizmi? Javob: ma'lum yoki noma'lum.");
+              }
               return uz("Siz ushbu hamkor bilan oldin qancha moliyaviy tajribaga ega bo'lgansiz? Tanlang: ma'lum yoki noma'lum.");
             case "identity_verified":
               return uz("Shaxs/ro'yxat ma'lumotlarini tekshirganmisiz? Javob: tasdiqlangan / qisman / tasdiqlanmagan.");
             case "past_defaults":
+              if (scenario === "installment" || scenario === "purchase" || scenario === "order") {
+                return uz("Bu sotuvchi bilan oldin yetkazib berish yoki pul qaytarish muammolari bo'lganmi? Javob: hech qachon / bir marta / ko'p marotaba.");
+              }
               return uz("Ular to'lovni kechiktirganmi yoki qaytarmaganmi? Javob: hech qachon / bir marta / ko'p marotaba.");
             case "stable_income_proof":
+              if (scenario === "installment" || scenario === "purchase" || scenario === "order") {
+                return uz("Bo'lib to'lash uchun o'zingizning barqaror daromad isbotingiz bormi? Javob: tasdiqlangan / qisman / yo'q.");
+              }
               return uz("Ularda tasdiqlangan va barqaror daromad isboti bormi? Javob: tasdiqlangan / qisman / yo'q.");
             case "documentation_completeness":
               return uz("Qo'llab-quvvatlovchi hujjatlar qay darajada to'liq? Javob: to'liq / qisman / yo'q.");
@@ -1304,12 +1539,21 @@ Raw user answer: ${raw}`;
           case "contract_reason":
             return ru("Почему у сделки нет письменного договора? Выберите один вариант.");
           case "relationship":
+            if (scenario === "installment" || scenario === "purchase" || scenario === "order") {
+              return ru("Вы знакомы с продавцом/поставщиком и доверяете ему? Ответьте: известно или неизвестно.");
+            }
             return ru("Сколько раз вы сталкивались с этим контрагентом в финансовых взаимодействиях? Ответьте: известно или неизвестно.");
           case "identity_verified":
             return ru("Проверяли ли вы личность/регистрационные данные контрагента? Выберите: подтверждено / частично / не подтверждено.");
           case "past_defaults":
+            if (scenario === "installment" || scenario === "purchase" || scenario === "order") {
+              return ru("Были ли у этого продавца случаи срыва поставки/проблем с возвратом? Выберите: никогда / один раз / многократно.");
+            }
             return ru("Были ли случаи просрочек/неплатежей? Выберите: никогда / один раз / многократно.");
           case "stable_income_proof":
+            if (scenario === "installment" || scenario === "purchase" || scenario === "order") {
+              return ru("Есть ли у вас подтверждение собственного стабильного дохода для рассрочки? Выберите: подтверждено / частично / нет.");
+            }
             return ru("Есть ли подтверждение стабильного дохода контрагента? Выберите: подтверждено / частично / нет.");
           case "documentation_completeness":
             return ru("Насколько полный пакет документов по сделке? Выберите: полный / частичный / отсутствует.");
@@ -1347,9 +1591,18 @@ Raw user answer: ${raw}`;
         return "investment";
       })();
 
-      const orderedIds = questions[category].map((q) => q.id) as AnalyzeMissingField[];
+      const orderedIds = [
+        ...questionTrees[detectedScenario].map((q) => q.id),
+        ...questions[category].map((q) => q.id),
+      ]
+        .filter((id, idx, arr) => arr.indexOf(id) === idx) as AnalyzeMissingField[];
 
       const stepById: Partial<Record<AnalyzeMissingField, Step>> = {
+        item_name: {
+          id: "item_name",
+          when: () => detectedScenario === "installment" || detectedScenario === "purchase",
+          parse: (raw) => parseAnalyzeValueForField("item_name", raw),
+        },
         contract: {
           id: "contract",
           when: () => true,
@@ -1374,6 +1627,51 @@ Raw user answer: ${raw}`;
           id: "past_defaults",
           when: () => true,
           parse: (raw) => parseAnalyzeValueForField("past_defaults", raw),
+        },
+        monthly_payment: {
+          id: "monthly_payment",
+          when: () => detectedScenario === "installment",
+          parse: (raw) => parseAnalyzeValueForField("monthly_payment", raw),
+        },
+        existing_debts: {
+          id: "existing_debts",
+          when: () => detectedScenario === "installment",
+          parse: (raw) => parseAnalyzeValueForField("existing_debts", raw),
+        },
+        interest_rate: {
+          id: "interest_rate",
+          when: () => detectedScenario === "installment",
+          parse: (raw) => parseAnalyzeValueForField("interest_rate", raw),
+        },
+        necessity_level: {
+          id: "necessity_level",
+          when: () => detectedScenario === "installment",
+          parse: (raw) => parseAnalyzeValueForField("necessity_level", raw),
+        },
+        loan_purpose: {
+          id: "loan_purpose",
+          when: () => scenario === "loan",
+          parse: (raw) => parseAnalyzeValueForField("loan_purpose", raw),
+        },
+        expected_return: {
+          id: "expected_return",
+          when: () => scenario === "invest" || scenario === "longterm_invest",
+          parse: (raw) => parseAnalyzeValueForField("expected_return", raw),
+        },
+        founder_known: {
+          id: "founder_known",
+          when: () => scenario === "invest" || scenario === "longterm_invest",
+          parse: (raw) => parseAnalyzeValueForField("founder_known", raw),
+        },
+        business_proof: {
+          id: "business_proof",
+          when: () => scenario === "invest" || scenario === "longterm_invest",
+          parse: (raw) => parseAnalyzeValueForField("business_proof", raw),
+        },
+        revenue_proof: {
+          id: "revenue_proof",
+          when: () => scenario === "invest" || scenario === "longterm_invest",
+          parse: (raw) => parseAnalyzeValueForField("revenue_proof", raw),
         },
         stable_income_proof: {
           id: "stable_income_proof",
@@ -1467,11 +1765,44 @@ Raw user answer: ${raw}`;
       let userIndex = 0;
       // Walk through the chat like a deterministic state machine.
       while (true) {
+        const missingFieldsNow = allSteps
+          .filter(
+            (s) =>
+              s.when(answers) &&
+              (answers[s.id] === undefined || answers[s.id] === null)
+          )
+          .map((s) => s.id);
+
+        const riskFlags: string[] = [];
+        if (answers.contract === false) riskFlags.push("no_contract");
+        if (answers.relationship === "unknown") riskFlags.push("unknown_counterparty");
+        if (
+          typeof answers.amount === "number" &&
+          typeof answers.income === "number" &&
+          Number.isFinite(answers.income) &&
+          answers.income > 0 &&
+          answers.amount > answers.income
+        ) {
+          riskFlags.push("high_amount_vs_income");
+        }
+
         const aiFollowUps = await generateFollowUpQuestions(
           answers as Partial<AnalyzeAnswers>,
           scenario,
           resolvedLanguage
         );
+
+        const aiAdaptive = await generateAdaptiveQuestion({
+          scenario,
+          answers: answers as Partial<AnalyzeAnswers>,
+          missingFields: missingFieldsNow,
+          riskFlags,
+          language: resolvedLanguage,
+        });
+
+        const adaptiveStep = aiAdaptive
+          ? stepById[aiAdaptive.id as AnalyzeMissingField]
+          : null;
 
         const prioritizedFollowUp = aiFollowUps
           .map((q) => stepById[q.id as AnalyzeMissingField] ?? null)
@@ -1486,12 +1817,26 @@ Raw user answer: ${raw}`;
           );
 
         const nextStep =
+          (adaptiveStep &&
+          adaptiveStep.when(answers) &&
+          (answers[adaptiveStep.id] === undefined || answers[adaptiveStep.id] === null)
+            ? adaptiveStep
+            : null) ??
           prioritizedFollowUp ??
           allSteps.find(
             (s) =>
               s.when(answers) &&
               (answers[s.id] === undefined || answers[s.id] === null)
           );
+
+        const getAdaptiveQuestionText = (fieldId: AnalyzeMissingField) => {
+          if (aiAdaptive && aiAdaptive.id === fieldId) return aiAdaptive.text;
+          const fromAi = aiFollowUps.find((q) => q.id === fieldId)?.text;
+          return typeof fromAi === "string" && fromAi.trim().length > 0
+            ? fromAi
+            : buildQuestionText(fieldId);
+        };
+
         if (!nextStep) {
           // All required answers are present
           const amountNum = Number(answers.amount);
@@ -1532,6 +1877,13 @@ Raw user answer: ${raw}`;
             scenario,
             resolvedLanguage
           );
+          const contradictions = detectContradictions(
+            answers as Partial<AnalyzeAnswers>,
+            resolvedLanguage
+          );
+          const behavior = evaluateBehavioralRisk(
+            answers as Partial<AnalyzeAnswers>
+          );
           // "AI thinking" delay for better UX (typing animation is already active client-side).
           await sleep(650);
 
@@ -1541,6 +1893,8 @@ Raw user answer: ${raw}`;
             answers: answers as AnalyzeAnswers,
             scoring,
             simulation,
+            contradictions,
+            behavioralRisk: behavior.risk,
           });
 
           await sleep(350);
@@ -1562,37 +1916,87 @@ Raw user answer: ${raw}`;
               ) || 0
             )
           );
+          const contradictionPenalty = Math.max(
+            0,
+            Math.min(
+              100,
+              Number(contradictions.penalty) || 0
+            )
+          );
+          const behaviorRisk = Math.max(
+            0,
+            Math.min(100, Number(behavior.risk) || 0)
+          );
+
+          const aiDiff = Math.abs(aiScore - baseScore);
+          const fallbackHybrid = aiDiff > 40;
           const finalRisk = Math.max(
             0,
             Math.min(
               100,
-              Math.round(baseScore * 0.6 + aiScore * 0.4 + scoring.interactionBonus)
+              Math.round(
+                fallbackHybrid
+                  ? baseScore * 0.7 +
+                      aiScore * 0.1 +
+                      behaviorRisk * 0.1 +
+                      contradictionPenalty * 0.1
+                  : baseScore * 0.5 +
+                      aiScore * 0.3 +
+                      behaviorRisk * 0.1 +
+                      contradictionPenalty * 0.1
+              )
             )
           );
+
+          const finalVerdict =
+            finalRisk >= 70 ? "HIGH RISK" : finalRisk >= 45 ? "CAUTION" : "SAFE";
+
+          const inconsistentData =
+            (Number(answers.amount ?? 0) > Number(answers.income ?? 0) * 3 &&
+              answers.repayment_plan === "aggressive") ||
+            (answers.relationship === "unknown" &&
+              answers.identity_verified === "not_verified" &&
+              answers.contract === false);
+
+          const finalConfidence = calculateConfidence({
+            answers: answers as Partial<AnalyzeAnswers>,
+            contradictionsCount: contradictions.contradictions.length,
+            inconsistentData,
+          });
 
           const out = {
             // Existing fields required by UI/dashboard
             risk: finalRisk,
-            verdict: scoring.verdict,
-            confidence: Math.max(0, Math.min(100, Number(scoring.confidence) || 0)),
-            reasons: scoring.reasons,
+            verdict: finalVerdict,
+            confidence: finalConfidence,
+            reasons: aiOut?.reasons?.length ? aiOut.reasons : scoring.reasons,
             language: resolvedLanguage,
 
             // Upgraded result engine output
             dealRisk: aiOut ? aiOut.dealRisk : scoring.dealRiskScore,
             userRisk: aiOut ? aiOut.userRisk : scoring.userCapacityScore,
-            verdictDetail: aiOut?.verdict || scoring.verdictDetail,
+            totalRisk: finalRisk,
+            verdictDetail: aiOut?.verdict || finalVerdict,
             keyRisks: aiOut?.reasons?.length ? aiOut.reasons : scoring.keyRisks,
             explanation: aiOut?.explanation || scoring.explanation,
             recommendations: aiOut?.recommendations?.length ? aiOut.recommendations : scoring.recommendations,
             socialProof: scoring.socialProof,
             worstCaseRisk: simulation.worstCaseRisk,
             scenarios: simulation.scenarios,
+            layers: {
+              legal: scoring.layers.legal,
+              financial: scoring.layers.financial,
+              behavioral: behaviorRisk,
+            },
+            contradictions: contradictions.contradictions,
 
             baseRisk: baseScore,
             aiRisk: aiScore,
             finalRisk,
             interactionBonus: scoring.interactionBonus,
+            contradictionPenalty,
+            behavioralRisk: behaviorRisk,
+            selfCheckFallback: fallbackHybrid,
             analysisStages: [
               "Analyzing risk patterns...",
               "Checking financial stability...",
@@ -1626,7 +2030,7 @@ Raw user answer: ${raw}`;
 
         // Need more user answers
         if (userIndex >= userMessages.length) {
-          const text = buildQuestionText(nextStep.id);
+          const text = getAdaptiveQuestionText(nextStep.id);
           const progress = Math.round((answeredCount() / totalSteps) * 100);
           return NextResponse.json({ text, missingField: nextStep.id as any, progress });
         }
@@ -1639,7 +2043,7 @@ Raw user answer: ${raw}`;
         }
         if (parsed === null || parsed === undefined) {
           // Ask the same question again (user entered invalid format)
-          const text = buildQuestionText(nextStep.id);
+          const text = getAdaptiveQuestionText(nextStep.id);
           const progress = Math.round((answeredCount() / totalSteps) * 100);
           return NextResponse.json({ text, missingField: nextStep.id as any, progress });
         }

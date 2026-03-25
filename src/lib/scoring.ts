@@ -37,6 +37,18 @@ export type AnalyzeAnswers = RiskInputData & {
   // User financials extras
   savings?: number;
   repayment_plan?: "conservative" | "moderate" | "aggressive";
+
+  // Scenario-adaptive extra fields (V4 question trees)
+  item_name?: string;
+  monthly_payment?: number;
+  existing_debts?: number;
+  interest_rate?: number;
+  necessity_level?: "necessary" | "optional";
+  loan_purpose?: string;
+  expected_return?: number;
+  founder_known?: string;
+  business_proof?: "yes" | "partial" | "no";
+  revenue_proof?: "yes" | "partial" | "no";
 };
 
 export type RiskScoringResult = {
@@ -58,6 +70,11 @@ export type RiskScoringResult = {
   dealRiskScore: number;
   userCapacityScore: number;
   interactionBonus: number;
+  layers: {
+    legal: number;
+    financial: number;
+    behavioral: number;
+  };
 
   // AI-ready explanation fields (also returned for deterministic fallback).
   keyRisks: string[];
@@ -570,6 +587,54 @@ export function calculateRisk(
 
   const overallRisk = clamp(Math.round(dealRiskScore * 0.6 + userCapacityScore * 0.4), 0, 100);
 
+  const legalLayer = clamp(
+    Math.round(
+      (answers.contract === false ? 40 : 0) +
+        (answers.documentation_completeness === "none"
+          ? 35
+          : answers.documentation_completeness === "partial"
+            ? 15
+            : 0) +
+        (answers.identity_verified === "not_verified"
+          ? 25
+          : answers.identity_verified === "partial"
+            ? 10
+            : 0) +
+        (analysisType === "installment" && answers.penalty_terms_present === false ? 15 : 0) +
+        (analysisType === "loan" && answers.collateral_provided === false ? 15 : 0)
+    ),
+    0,
+    100
+  );
+
+  const financialLayer = clamp(
+    Math.round(
+      userCapacityScore * 0.7 +
+        (answers.stable_income_proof === "none"
+          ? 20
+          : answers.stable_income_proof === "partial"
+            ? 10
+            : 0) +
+        (answers.past_defaults === "many"
+          ? 20
+          : answers.past_defaults === "once"
+            ? 8
+            : 0)
+    ),
+    0,
+    100
+  );
+
+  const behavioralLayer = clamp(
+    Math.round(
+      (answers.urgency === "high" ? 35 : answers.urgency === "medium" ? 15 : 0) +
+        (answers.transparency === "low" ? 35 : answers.transparency === "medium" ? 12 : 0) +
+        (answers.relationship === "unknown" ? 10 : 0)
+    ),
+    0,
+    100
+  );
+
   const verdict = overallRisk > 70
     ? t(language, "Высокий риск", "High risk", "Yuqori risk")
     : overallRisk > 50
@@ -875,6 +940,11 @@ export function calculateRisk(
     dealRiskScore,
     userCapacityScore,
     interactionBonus: interactionPenalty,
+    layers: {
+      legal: legalLayer,
+      financial: financialLayer,
+      behavioral: behavioralLayer,
+    },
     keyRisks: enrichedKeyRisks.slice(0, 8),
     explanation,
     recommendations: recommendations.slice(0, 6),

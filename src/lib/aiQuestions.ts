@@ -7,9 +7,19 @@ export type FollowUpQuestion = {
     | "identity_verified"
     | "stable_income_proof"
     | "documentation_completeness"
-    | "repayment_plan";
+    | "repayment_plan"
+    | "monthly_payment"
+    | "existing_debts";
   text: string;
   priority: number;
+};
+
+export type AdaptiveQuestionContext = {
+  scenario: AnalysisType;
+  answers: Partial<AnalyzeAnswers>;
+  missingFields: string[];
+  riskFlags: string[];
+  language: Language;
 };
 
 function normLang(language: Language) {
@@ -18,6 +28,7 @@ function normLang(language: Language) {
 
 function deterministicFollowUps(
   answers: Partial<AnalyzeAnswers>,
+  analysisType: AnalysisType,
   language: Language
 ): FollowUpQuestion[] {
   const l = normLang(language);
@@ -49,13 +60,30 @@ function deterministicFollowUps(
     });
     q.push({
       id: "stable_income_proof",
-      priority: 85,
+      priority:
+        analysisType === "installment" ||
+        analysisType === "purchase" ||
+        analysisType === "order"
+          ? 75
+          : 85,
       text:
         l === "en"
-          ? "Do they have stable, verifiable income proof?"
+          ? analysisType === "installment" ||
+            analysisType === "purchase" ||
+            analysisType === "order"
+            ? "Do you have stable, verifiable income proof for this payment plan?"
+            : "Do they have stable, verifiable income proof?"
           : l === "uz"
-            ? "Ularda barqaror va tasdiqlangan daromad isboti bormi?"
-            : "Есть ли у них подтверждение стабильного дохода?",
+            ? analysisType === "installment" ||
+              analysisType === "purchase" ||
+              analysisType === "order"
+              ? "Ushbu to'lov rejasi uchun sizda barqaror daromad isboti bormi?"
+              : "Ularda barqaror va tasdiqlangan daromad isboti bormi?"
+            : analysisType === "installment" ||
+              analysisType === "purchase" ||
+              analysisType === "order"
+              ? "Есть ли у вас подтверждение стабильного дохода для этого платежа?"
+              : "Есть ли у них подтверждение стабильного дохода?",
     });
   }
 
@@ -95,7 +123,7 @@ export async function generateFollowUpQuestions(
   analysisType: AnalysisType,
   language: Language = "ru"
 ): Promise<FollowUpQuestion[]> {
-  const base = deterministicFollowUps(answers, language);
+  const base = deterministicFollowUps(answers, analysisType, language);
 
   // Optional AI boost: re-rank or add one extra conditional follow-up.
   const aiFollowUpEnabled = process.env.AI_FOLLOWUP_ENABLE === "true";
@@ -152,5 +180,81 @@ export async function generateFollowUpQuestions(
   } catch {
     return base;
   }
+}
+
+export async function generateAdaptiveQuestion(
+  context: AdaptiveQuestionContext
+): Promise<FollowUpQuestion | null> {
+  const l = normLang(context.language);
+  const { scenario, answers, riskFlags } = context;
+
+  // Deterministic high-priority adaptive questioning first.
+  if (scenario === "installment") {
+    if (answers.monthly_payment === undefined || answers.monthly_payment === null) {
+      return {
+        id: "monthly_payment",
+        priority: 99,
+        text:
+          l === "en"
+            ? "What monthly payment amount are you planning (USD)?"
+            : l === "uz"
+              ? "Oyiga qancha to'lov qilasiz (USD)?"
+              : "Какой ежемесячный платеж планируете (USD)?",
+      };
+    }
+    if (answers.existing_debts === undefined || answers.existing_debts === null) {
+      return {
+        id: "existing_debts",
+        priority: 95,
+        text:
+          l === "en"
+            ? "How much do you already pay monthly on existing debts (USD)?"
+            : l === "uz"
+              ? "Hozirgi qarzlar bo'yicha oyiga qancha to'lov qilasiz (USD)?"
+              : "Сколько уже платите по текущим долгам в месяц (USD)?",
+      };
+    }
+  }
+
+  if (riskFlags.includes("high_amount_vs_income")) {
+    return {
+      id: "repayment_plan",
+      priority: 96,
+      text:
+        l === "en"
+          ? "If your income drops for 2-3 months, how will you continue payments?"
+          : l === "uz"
+            ? "Daromad 2-3 oyga tushib qolsa, to'lovlarni qanday davom ettirasiz?"
+            : "Если доход снизится на 2-3 месяца, как будете продолжать платежи?",
+    };
+  }
+
+  if (riskFlags.includes("no_contract")) {
+    return {
+      id: "contract_reason",
+      priority: 92,
+      text:
+        l === "en"
+          ? "Why is there no formal written agreement for this deal?"
+          : l === "uz"
+            ? "Nega bu bitim uchun rasmiy yozma shartnoma yo'q?"
+            : "Почему по этой сделке нет формального письменного договора?",
+    };
+  }
+
+  if (riskFlags.includes("unknown_counterparty")) {
+    return {
+      id: "identity_verified",
+      priority: 90,
+      text:
+        l === "en"
+          ? "How exactly did you find this person and what identity checks did you do?"
+          : l === "uz"
+            ? "Bu odamni qayerdan topdingiz va qanday shaxsni tekshirish qildingiz?"
+            : "Как вы нашли этого человека и какие проверки личности вы уже сделали?",
+    };
+  }
+
+  return null;
 }
 
