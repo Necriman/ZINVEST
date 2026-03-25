@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSupabase } from "@/lib/supabase";
-import { calculateRisk, type RiskInputData, type AnalyzeAnswers } from "@/lib/scoring";
+import { calculateRisk } from "../../../lib/scoring";
+import type { RiskInputData, AnalyzeAnswers } from "../../../lib/scoring";
+import { generateRiskAIExplanation } from "@/lib/ai";
+import { questions } from "@/lib/questions";
 import type { Language } from "@/lib/translations";
 
 type ChatMode = "finance" | "general" | "analyze";
@@ -1207,46 +1210,110 @@ export async function POST(req: NextRequest) {
 
       type Step = { id: AnalyzeMissingField; when: (a: AnalyzeAnswersState) => boolean; parse: (raw: string) => AnalyzeValue | null; };
 
-      const stepsBase: Step[] = [
-        { id: "contract", when: () => true, parse: (raw) => parseAnalyzeValueForField("contract", raw) },
-        { id: "contract_reason", when: (a) => a.contract === false, parse: (raw) => parseAnalyzeValueForField("contract_reason", raw) },
-        { id: "relationship", when: () => true, parse: (raw) => parseAnalyzeValueForField("relationship", raw) },
-        { id: "identity_verified", when: (a) => a.relationship === "unknown", parse: (raw) => parseAnalyzeValueForField("identity_verified", raw) },
-        { id: "past_defaults", when: () => true, parse: (raw) => parseAnalyzeValueForField("past_defaults", raw) },
-        { id: "transparency", when: () => true, parse: (raw) => parseAnalyzeValueForField("transparency", raw) },
-        { id: "urgency", when: () => true, parse: (raw) => parseAnalyzeValueForField("urgency", raw) },
-      ];
-
-      const scenarioSteps: Step[] = (() => {
-        if (scenario === "loan") {
-          return [{ id: "collateral_provided", when: () => true, parse: (raw) => parseAnalyzeValueForField("collateral_provided", raw) }];
-        }
-        if (scenario === "installment") {
-          return [{ id: "penalty_terms_present", when: () => true, parse: (raw) => parseAnalyzeValueForField("penalty_terms_present", raw) }];
-        }
-        if (scenario === "purchase" || scenario === "order") {
-          return [{ id: "delivery_reliability", when: () => true, parse: (raw) => parseAnalyzeValueForField("delivery_reliability", raw) }];
-        }
-        return [{ id: "guaranteed_return", when: () => true, parse: (raw) => parseAnalyzeValueForField("guaranteed_return", raw) }];
+      const category = (() => {
+        if (scenario === "loan") return "lend";
+        if (scenario === "installment") return "installment";
+        if (scenario === "purchase" || scenario === "order") return "purchase";
+        return "investment";
       })();
 
-      const tailSteps: Step[] = [
-        { id: "amount", when: () => true, parse: (raw) => parseAnalyzeValueForField("amount", raw) },
-        { id: "income", when: () => true, parse: (raw) => parseAnalyzeValueForField("income", raw) },
-        {
+      const orderedIds = questions[category].map((q) => q.id) as AnalyzeMissingField[];
+
+      const stepById: Partial<Record<AnalyzeMissingField, Step>> = {
+        contract: {
+          id: "contract",
+          when: () => true,
+          parse: (raw) => parseAnalyzeValueForField("contract", raw),
+        },
+        contract_reason: {
+          id: "contract_reason",
+          when: (a) => a.contract === false,
+          parse: (raw) => parseAnalyzeValueForField("contract_reason", raw),
+        },
+        relationship: {
+          id: "relationship",
+          when: () => true,
+          parse: (raw) => parseAnalyzeValueForField("relationship", raw),
+        },
+        identity_verified: {
+          id: "identity_verified",
+          when: (a) => a.relationship === "unknown",
+          parse: (raw) => parseAnalyzeValueForField("identity_verified", raw),
+        },
+        past_defaults: {
+          id: "past_defaults",
+          when: () => true,
+          parse: (raw) => parseAnalyzeValueForField("past_defaults", raw),
+        },
+        transparency: {
+          id: "transparency",
+          when: () => true,
+          parse: (raw) => parseAnalyzeValueForField("transparency", raw),
+        },
+        urgency: {
+          id: "urgency",
+          when: () => true,
+          parse: (raw) => parseAnalyzeValueForField("urgency", raw),
+        },
+
+        collateral_provided: {
+          id: "collateral_provided",
+          when: () => scenario === "loan",
+          parse: (raw) => parseAnalyzeValueForField("collateral_provided", raw),
+        },
+        penalty_terms_present: {
+          id: "penalty_terms_present",
+          when: () => scenario === "installment",
+          parse: (raw) => parseAnalyzeValueForField("penalty_terms_present", raw),
+        },
+        delivery_reliability: {
+          id: "delivery_reliability",
+          when: () => scenario === "purchase" || scenario === "order",
+          parse: (raw) => parseAnalyzeValueForField("delivery_reliability", raw),
+        },
+        guaranteed_return: {
+          id: "guaranteed_return",
+          when: () => scenario === "invest" || scenario === "longterm_invest",
+          parse: (raw) => parseAnalyzeValueForField("guaranteed_return", raw),
+        },
+
+        amount: {
+          id: "amount",
+          when: () => true,
+          parse: (raw) => parseAnalyzeValueForField("amount", raw),
+        },
+        income: {
+          id: "income",
+          when: () => true,
+          parse: (raw) => parseAnalyzeValueForField("income", raw),
+        },
+        repayment_plan: {
           id: "repayment_plan",
           when: (a) => {
             if (typeof a.amount !== "number" || typeof a.income !== "number") return false;
             if (!Number.isFinite(a.income) || a.income <= 0) return false;
-            return a.amount > 0.5 * a.income;
+            const baseThreshold = 0.5;
+            const highUrgencyThreshold = 0.3;
+            const threshold = a.urgency === "high" ? highUrgencyThreshold : baseThreshold;
+            return a.amount > threshold * a.income;
           },
           parse: (raw) => parseAnalyzeValueForField("repayment_plan", raw),
         },
-        { id: "savings", when: () => true, parse: (raw) => parseAnalyzeValueForField("savings", raw) },
-        { id: "deadline", when: () => true, parse: (raw) => parseAnalyzeValueForField("deadline", raw) },
-      ];
+        savings: {
+          id: "savings",
+          when: () => true,
+          parse: (raw) => parseAnalyzeValueForField("savings", raw),
+        },
+        deadline: {
+          id: "deadline",
+          when: () => true,
+          parse: (raw) => parseAnalyzeValueForField("deadline", raw),
+        },
+      };
 
-      const allSteps = [...stepsBase, ...scenarioSteps, ...tailSteps];
+      const allSteps = orderedIds
+        .map((id) => stepById[id])
+        .filter((x): x is Step => Boolean(x));
       const totalSteps = allSteps.length;
 
       const answeredCount = () => {
@@ -1272,14 +1339,41 @@ export async function POST(req: NextRequest) {
           };
 
           const scoring = calculateRisk(answers as AnalyzeAnswers, scenario, resolvedLanguage);
+          // "AI thinking" delay for better UX (typing animation is already active client-side).
+          await sleep(650);
+
+          const aiOut = await generateRiskAIExplanation({
+            language: resolvedLanguage,
+            analysisType: scenario,
+            answers: answers as AnalyzeAnswers,
+            scoring,
+          });
+
+          await sleep(350);
+
           const out = {
+            // Existing fields required by UI/dashboard
             risk: scoring.score,
             verdict: scoring.verdict,
             confidence: scoring.confidence,
             reasons: scoring.reasons,
             language: resolvedLanguage,
+
+            // Upgraded result engine output
+            dealRisk: scoring.dealRiskScore,
+            userRisk: scoring.userCapacityScore,
+            verdictDetail: scoring.verdictDetail,
+            keyRisks: aiOut?.keyRisks?.length ? aiOut.keyRisks : scoring.keyRisks,
+            explanation: aiOut?.explanation || scoring.explanation,
+            recommendations: aiOut?.recommendations?.length ? aiOut.recommendations : scoring.recommendations,
+            socialProof: aiOut?.socialProof || scoring.socialProof,
+
+            // Back-compat split scores
             dealRiskScore: scoring.dealRiskScore,
             userCapacityScore: scoring.userCapacityScore,
+
+            // Store full answers for future personalization / audits
+            answers: answers as AnalyzeAnswers,
           };
 
           try {
