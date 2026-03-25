@@ -74,6 +74,17 @@ create table if not exists public.premium_rewards (
   unique (user_id, unit_key, rank)
 );
 
+-- ─── AI RISK SCORING ANALYSES ─────────────────────────────────
+-- Stores AI inputs + scoring results for risk decisions.
+create table if not exists public.analyses (
+  id          uuid primary key default gen_random_uuid(),
+  user_id     uuid references public.users(id) on delete set null,
+  type        text not null,
+  input_data  jsonb not null,
+  result      jsonb not null,
+  created_at  timestamptz not null default now()
+);
+
 -- ─── INDEXES ─────────────────────────────────────────────────
 create index if not exists visits_created_at_idx    on public.visits(created_at desc);
 create index if not exists visits_session_id_idx    on public.visits(session_id);
@@ -85,6 +96,9 @@ create index if not exists unit_test_attempts_unit_key_idx on public.unit_test_a
 create index if not exists unit_test_attempts_user_idx on public.unit_test_attempts(user_id);
 create index if not exists premium_rewards_user_expires_idx on public.premium_rewards(user_id, expires_at desc);
 
+create index if not exists analyses_user_id_idx on public.analyses(user_id);
+create index if not exists analyses_created_at_idx on public.analyses(created_at desc);
+
 -- ─── ROW LEVEL SECURITY ──────────────────────────────────────
 -- Enable RLS on all tables
 alter table public.users     enable row level security;
@@ -93,6 +107,7 @@ alter table public.page_views enable row level security;
 alter table public.signups   enable row level security;
 alter table public.unit_test_attempts enable row level security;
 alter table public.premium_rewards    enable row level security;
+alter table public.analyses          enable row level security;
 
 -- Allow anon key to INSERT into all tables (needed for client-side tracking)
 create policy "Allow anon insert users"      on public.users      for insert with check (true);
@@ -101,6 +116,7 @@ create policy "Allow anon insert page_views" on public.page_views for insert wit
 create policy "Allow anon insert signups"    on public.signups    for insert with check (true);
 create policy "Allow anon insert unit_test_attempts" on public.unit_test_attempts for insert with check (true);
 create policy "Allow anon insert premium_rewards"     on public.premium_rewards     for insert with check (true);
+create policy "Allow anon insert analyses"            on public.analyses            for insert with check (true);
 
 -- Allow anon key to SELECT from all tables (needed for auth check + admin)
 create policy "Allow anon select users"      on public.users      for select using (true);
@@ -109,6 +125,7 @@ create policy "Allow anon select page_views" on public.page_views for select usi
 create policy "Allow anon select signups"    on public.signups    for select using (true);
 create policy "Allow anon select unit_test_attempts" on public.unit_test_attempts for select using (true);
 create policy "Allow anon select premium_rewards"     on public.premium_rewards     for select using (true);
+create policy "Allow anon select analyses"            on public.analyses            for select using (true);
 
 -- ─── DONE ────────────────────────────────────────────────────
 -- After running this, copy your Project URL and anon key from

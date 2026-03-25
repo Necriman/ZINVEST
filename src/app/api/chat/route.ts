@@ -1,6 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
+import { getSupabase } from "@/lib/supabase";
+import { calculateRisk, type RiskInputData } from "@/lib/scoring";
 
-type ChatMode = "finance" | "general";
+type ChatMode = "finance" | "general" | "analyze";
+
+type AnalysisType = "loan" | "purchase" | "invest";
+
+function parseAnalysisType(raw: unknown): AnalysisType {
+  const v = typeof raw === "string" ? raw : "";
+  if (v === "loan" || v === "purchase" || v === "invest") return v;
+  return "loan";
+}
 
 type UnitContext = {
   title?: string;
@@ -31,6 +41,63 @@ Your job:
 
 Tone: Friendly, direct, and practical.`;
 
+const ANALYZE_SYSTEM_PROMPT = `You are Zinvest AI risk scoring assistant.
+
+You help the user by asking short, specific questions, then producing structured data for risk scoring.
+
+You MUST respond with valid JSON only (no markdown, no extra text).
+
+Two possible response shapes:
+
+1) status = "question" (ask the next question)
+{
+  "status": "question",
+  "question": "string",
+  "data": {
+    "amount"?: number,
+    "income"?: number,
+    "contract"?: boolean,
+    "relationship"?: "known" | "unknown",
+    "deadline"?: number
+  }
+}
+
+2) status = "scored" (all fields must be present and valid)
+{
+  "status": "scored",
+  "data": {
+    "amount": number,
+    "income": number,
+    "contract": boolean,
+    "relationship": "known" | "unknown",
+    "deadline": number
+  }
+}
+
+Rules:
+- amount and income must be numbers (not strings).
+- deadline must be a number in DAYS. Convert weeks (~*7) and months (~*30) if needed.
+- contract is true only if there is a formal contract/agreement.
+- relationship is "unknown" if the counterparty is not trusted/known by the user.
+- If you don't have enough info, choose status="question" and ask the next missing detail.
+- Do not guess ambiguous values; ask follow-ups instead.
+`;
+
+function normalizeRiskInput(raw: any): RiskInputData | null {
+  const amount = Number(raw?.amount);
+  const income = Number(raw?.income);
+  const contract = Boolean(raw?.contract);
+  const deadline = Number(raw?.deadline);
+  const relRaw = typeof raw?.relationship === "string" ? raw.relationship.toLowerCase() : "";
+  const relationship: RiskInputData["relationship"] = relRaw === "unknown" ? "unknown" : "known";
+
+  if (!Number.isFinite(amount) || amount < 0) return null;
+  if (!Number.isFinite(income) || income < 0) return null;
+  if (!Number.isFinite(deadline) || deadline < 0) return null;
+
+  return { amount, income, contract, relationship, deadline };
+}
+
 function buildSystemPrompt(base: string, unit?: UnitContext, mode?: ChatMode) {
   const unitTitle = unit?.title?.trim();
   const unitFocus = unit?.focus?.trim();
@@ -56,10 +123,12 @@ function buildSystemPrompt(base: string, unit?: UnitContext, mode?: ChatMode) {
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { messages, mode, unit } = body as {
+    const { messages, mode, unit, analysisType, userId } = body as {
       messages: Array<{ role: "user" | "assistant"; content: string }>;
       mode?: ChatMode;
       unit?: UnitContext;
+      analysisType?: AnalysisType;
+      userId?: string | null;
     };
 
     if (!messages || !Array.isArray(messages)) {
@@ -74,10 +143,17 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "API key not configured" }, { status: 500 });
     }
 
-    const resolvedMode: ChatMode = mode === "general" ? "general" : "finance";
-    const baseSystemPrompt =
-      resolvedMode === "general" ? GENERAL_SYSTEM_PROMPT : FINANCE_SYSTEM_PROMPT;
-    const systemPrompt = buildSystemPrompt(baseSystemPrompt, unit, resolvedMode);
+    const resolvedMode: ChatMode =
+      mode === "general" ? "general" : mode === "analyze" ? "analyze" : "finance";
+
+    const systemPrompt =
+      resolvedMode === "analyze"
+        ? `${ANALYZE_SYSTEM_PROMPT}\n\nScenario type: ${parseAnalysisType(analysisType)}.`
+        : buildSystemPrompt(
+            resolvedMode === "general" ? GENERAL_SYSTEM_PROMPT : FINANCE_SYSTEM_PROMPT,
+            unit,
+            resolvedMode
+          );
 
     const response = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
@@ -105,7 +181,65 @@ export async function POST(req: NextRequest) {
     const data = await response.json();
     const text = data.content?.map((b: { text?: string }) => b.text || "").join("") || "";
 
-    return NextResponse.json({ text });
+    if (resolvedMode !== "analyze") {
+      return NextResponse.json({ text });
+    }
+
+    // Analyze flow: we expect strict JSON from the model.
+    let parsed: any = null;
+    try {
+      parsed = text ? JSON.parse(text) : null;
+    } catch {
+      // If the model didn't follow JSON-only instructions, fallback to plain text.
+      return NextResponse.json({ text });
+    }
+
+    const status = parsed?.status;
+    if (status === "question") {
+      const question = typeof parsed?.question === "string" ? parsed.question : "Please provide the missing details.";
+      return NextResponse.json({ text: question });
+    }
+
+    if (status === "scored") {
+      const normalized = normalizeRiskInput(parsed?.data);
+      if (!normalized) {
+        return NextResponse.json(
+          { error: "AI returned invalid scoring input" },
+          { status: 400 }
+        );
+      }
+
+      const scoring = calculateRisk(normalized);
+      const out = {
+        risk: scoring.score,
+        verdict: scoring.verdict,
+        confidence: scoring.confidence,
+        reasons: scoring.reasons,
+      };
+
+      // Persist analysis result (best-effort).
+      try {
+        const supabase = getSupabase();
+        if (supabase) {
+          await supabase.from("analyses").insert({
+            user_id: typeof userId === "string" ? userId : null,
+            type: parseAnalysisType(analysisType),
+            input_data: normalized,
+            result: out,
+          });
+        }
+      } catch (e) {
+        console.error("Analyze persist error:", e);
+      }
+
+      return NextResponse.json(out);
+    }
+
+    // Unknown response shape: be forgiving.
+    if (parsed?.question && typeof parsed.question === "string") {
+      return NextResponse.json({ text: parsed.question });
+    }
+    return NextResponse.json({ text: "Please provide the missing details." });
   } catch (err) {
     console.error("Chat API error:", err);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
