@@ -100,6 +100,16 @@ export default function TurboAIPage() {
 
   const activeUnit = financeUnits.find((u) => u.id === activeUnitId) ?? financeUnits[0];
 
+  function safeParseJson(raw: string): any | null {
+    try {
+      const trimmed = raw.trim();
+      if (!trimmed) return null;
+      return JSON.parse(trimmed);
+    } catch {
+      return null;
+    }
+  }
+
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
@@ -140,10 +150,11 @@ export default function TurboAIPage() {
         }),
       });
 
-      const data = await res.json();
+      const raw = await res.text();
+      const data = safeParseJson(raw);
 
       if (!res.ok) {
-        throw new Error(data?.error || `Error ${res.status}`);
+        throw new Error(data?.error || raw || `Error ${res.status}`);
       }
 
       if (mode === "analyze" && typeof data?.risk === "number" && typeof data?.verdict === "string") {
@@ -159,7 +170,8 @@ export default function TurboAIPage() {
       const assistantMessage: Message = {
         id: Date.now() + 1,
         role: "assistant",
-        content: data.text || "Sorry, I couldn't generate a response.",
+        content:
+          data?.text || (typeof raw === "string" && raw ? raw : "Sorry, I couldn't generate a response."),
       };
       setMessages((prev) => [...prev, assistantMessage]);
     } catch (err) {
@@ -299,8 +311,9 @@ export default function TurboAIPage() {
                             }),
                           });
 
-                          const data = await res.json();
-                          if (!res.ok) throw new Error(data?.error || `Error ${res.status}`);
+                          const raw = await res.text();
+                          const data = safeParseJson(raw);
+                          if (!res.ok) throw new Error(data?.error || raw || `Error ${res.status}`);
 
                           if (typeof data?.risk === "number" && typeof data?.verdict === "string") {
                             setRiskResult({
@@ -314,7 +327,7 @@ export default function TurboAIPage() {
                               id: Date.now() + 1,
                               role: "assistant",
                               content:
-                                data?.text || "Got it. Please answer the next question.",
+                                data?.text || (typeof raw === "string" && raw ? raw : "Got it. Please answer the next question."),
                             };
                             setMessages((prev) => [...prev, assistantMessage]);
                           }
@@ -433,8 +446,9 @@ export default function TurboAIPage() {
                                   }),
                                 });
 
-                                const data = await res.json();
-                                if (!res.ok) throw new Error(data?.error || `Error ${res.status}`);
+                                const raw = await res.text();
+                                const data = safeParseJson(raw);
+                                if (!res.ok) throw new Error(data?.error || raw || `Error ${res.status}`);
 
                                 if (typeof data?.risk === "number" && typeof data?.verdict === "string") {
                                   setRiskResult({
@@ -449,7 +463,8 @@ export default function TurboAIPage() {
                                 const assistantMessage: Message = {
                                   id: Date.now() + 1,
                                   role: "assistant",
-                                  content: data?.text || "Got it. Please answer the next question.",
+                                  content:
+                                    data?.text || (typeof raw === "string" && raw ? raw : "Got it. Please answer the next question."),
                                 };
                                 setMessages((prev) => [...prev, assistantMessage]);
                               } catch (err) {
