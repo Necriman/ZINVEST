@@ -9,6 +9,8 @@ import {
 import Link from "next/link";
 import Navigation from "@/components/sections/navigation";
 import { useLanguage } from "@/lib/language-context";
+import { useAuth } from "@/lib/auth-context";
+import RiskResultCard, { type RiskResult } from "@/components/RiskResult";
 
 interface Message {
   id: number;
@@ -16,7 +18,9 @@ interface Message {
   content: string;
 }
 
-type ChatMode = "finance" | "general";
+type ChatMode = "finance" | "analyze";
+
+type AnalysisType = "loan" | "purchase" | "invest";
 
 type Unit = {
   id: string;
@@ -28,10 +32,14 @@ type Unit = {
 
 export default function TurboAIPage() {
   const { t } = useLanguage();
+  const { user } = useAuth();
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [isTyping, setIsTyping] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  const [analysisType, setAnalysisType] = useState<AnalysisType | null>(null);
+  const [riskResult, setRiskResult] = useState<RiskResult | null>(null);
 
   const financeUnits: Unit[] = [
     {
@@ -86,7 +94,10 @@ export default function TurboAIPage() {
   ];
 
   const [mode, setMode] = useState<ChatMode>("finance");
-  const [activeUnitId, setActiveUnitId] = useState<string>(financeUnits[0]?.id ?? "revenue-vs-profit");
+  const [activeUnitId, setActiveUnitId] = useState<string>(
+    financeUnits[0]?.id ?? "revenue-vs-profit"
+  );
+
   const activeUnit = financeUnits.find((u) => u.id === activeUnitId) ?? financeUnits[0];
 
   const scrollToBottom = () => {
@@ -102,6 +113,8 @@ export default function TurboAIPage() {
     setMessages([]);
     setIsTyping(false);
     setInput("");
+    setRiskResult(null);
+    if (mode !== "analyze") setAnalysisType(null);
   }, [mode, activeUnitId]);
 
   const handleSend = async (text: string) => {
@@ -122,6 +135,8 @@ export default function TurboAIPage() {
           messages: updatedMessages.map(({ role, content }) => ({ role, content })),
           mode,
           unit: mode === "finance" ? { title: activeUnit.title, focus: activeUnit.focus } : undefined,
+          analysisType: mode === "analyze" ? analysisType : undefined,
+          userId: user?.id ?? null,
         }),
       });
 
@@ -129,6 +144,16 @@ export default function TurboAIPage() {
 
       if (!res.ok) {
         throw new Error(data?.error || `Error ${res.status}`);
+      }
+
+      if (mode === "analyze" && typeof data?.risk === "number" && typeof data?.verdict === "string") {
+        setRiskResult({
+          risk: data.risk,
+          verdict: data.verdict,
+          confidence: data.confidence ?? 0,
+          reasons: Array.isArray(data.reasons) ? data.reasons : [],
+        });
+        return;
       }
 
       const assistantMessage: Message = {
@@ -199,14 +224,14 @@ export default function TurboAIPage() {
                 Finance Tutor
               </button>
               <button
-                onClick={() => setMode("general")}
+                onClick={() => setMode("analyze")}
                 className={`px-4 py-2 rounded-xl text-sm font-medium transition-all border ${
-                  mode === "general"
+                  mode === "analyze"
                     ? "bg-purple-500/20 text-purple-400 border-purple-500/30"
                     : "bg-white/5 text-slate-300 border-white/10 hover:bg-white/10 hover:text-white"
                 }`}
               >
-                General Assistant
+                Risk Scoring
               </button>
             </div>
 
@@ -227,6 +252,96 @@ export default function TurboAIPage() {
                       <span className="text-sm font-semibold text-white">{u.title}</span>
                     </div>
                     <p className="text-xs text-slate-400">{u.description}</p>
+                  </button>
+                ))}
+              </div>
+            )}
+
+            {mode === "analyze" && (
+              <div className="flex gap-3 overflow-x-auto pb-2">
+                {(
+                  [
+                    { type: "loan" as const, title: "💸 Give a loan" },
+                    { type: "purchase" as const, title: "🛒 Make a purchase" },
+                    { type: "invest" as const, title: "📈 Invest" },
+                  ] as const
+                ).map((c) => (
+                  <button
+                    key={c.type}
+                    onClick={() => {
+                      setAnalysisType(c.type);
+                      setRiskResult(null);
+                      setMessages([]);
+                      setInput("");
+
+                      const seedMessage: Message = {
+                        id: Date.now(),
+                        role: "user",
+                        content: `I selected: ${c.title}. Start AI risk scoring. Ask me the questions you need to collect structured inputs for an accurate risk score.`,
+                      };
+                      const nextMessages = [seedMessage];
+                      setMessages(nextMessages);
+
+                      void (async () => {
+                        setIsTyping(true);
+                        try {
+                          const res = await fetch("/api/chat", {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({
+                              messages: nextMessages.map(({ role, content }) => ({
+                                role,
+                                content,
+                              })),
+                              mode: "analyze",
+                              analysisType: c.type,
+                              userId: user?.id ?? null,
+                            }),
+                          });
+
+                          const data = await res.json();
+                          if (!res.ok) throw new Error(data?.error || `Error ${res.status}`);
+
+                          if (typeof data?.risk === "number" && typeof data?.verdict === "string") {
+                            setRiskResult({
+                              risk: data.risk,
+                              verdict: data.verdict,
+                              confidence: data.confidence ?? 0,
+                              reasons: Array.isArray(data.reasons) ? data.reasons : [],
+                            });
+                          } else {
+                            const assistantMessage: Message = {
+                              id: Date.now() + 1,
+                              role: "assistant",
+                              content:
+                                data?.text || "Got it. Please answer the next question.",
+                            };
+                            setMessages((prev) => [...prev, assistantMessage]);
+                          }
+                        } catch (err) {
+                          console.error("Risk scoring seed error:", err);
+                          const assistantMessage: Message = {
+                            id: Date.now() + 1,
+                            role: "assistant",
+                            content: "Something went wrong. Please try again.",
+                          };
+                          setMessages((prev) => [...prev, assistantMessage]);
+                        } finally {
+                          setIsTyping(false);
+                        }
+                      })();
+                    }}
+                    className={`min-w-[240px] text-left rounded-2xl border p-4 transition-all ${
+                      analysisType === c.type
+                        ? "border-purple-500/30 bg-purple-500/10"
+                        : "border-white/10 bg-white/5 hover:bg-white/10 hover:border-white/20"
+                    }`}
+                  >
+                    <div className="flex items-center gap-2 mb-1">
+                      <Lightbulb className="h-4 w-4 text-purple-400" />
+                      <span className="text-sm font-semibold text-white">{c.title}</span>
+                    </div>
+                    <p className="text-xs text-slate-400">Answer short facts to get a risk verdict.</p>
                   </button>
                 ))}
               </div>
@@ -252,24 +367,56 @@ export default function TurboAIPage() {
                   </p>
                   
                   {/* Suggested Questions */}
-                  <div className="grid gap-3 w-full max-w-lg">
-                    {(mode === "finance" ? activeUnit.questions : generalSuggestedQuestions).map((question, idx) => (
-                      <motion.button
-                        key={idx}
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: idx * 0.1 }}
-                        onClick={() => handleSend(question)}
-                        className="flex items-center gap-3 rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-left text-sm text-slate-300 transition-all hover:bg-white/10 hover:border-white/20"
-                      >
-                        <Lightbulb className="h-4 w-4 text-blue-400 shrink-0" />
-                        {question}
-                      </motion.button>
-                    ))}
-                  </div>
+                  {mode === "finance" ? (
+                    <div className="grid gap-3 w-full max-w-lg">
+                      {activeUnit.questions.map((question, idx) => (
+                        <motion.button
+                          key={idx}
+                          initial={{ opacity: 0, y: 10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ delay: idx * 0.1 }}
+                          onClick={() => handleSend(question)}
+                          className="flex items-center gap-3 rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-left text-sm text-slate-300 transition-all hover:bg-white/10 hover:border-white/20"
+                        >
+                          <Lightbulb className="h-4 w-4 text-blue-400 shrink-0" />
+                          {question}
+                        </motion.button>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-slate-400 max-w-md">
+                      Choose a scenario above to start risk scoring.
+                    </div>
+                  )}
                 </motion.div>
               ) : (
                 <>
+                  {riskResult ? (
+                    <div className="px-1">
+                      <RiskResultCard result={riskResult} />
+                      <div className="pt-4 flex flex-wrap gap-3">
+                        <button
+                          onClick={() => {
+                            setRiskResult(null);
+                            setMessages([]);
+                            setInput("");
+                            if (analysisType) {
+                              const seedMessage: Message = {
+                                id: Date.now(),
+                                role: "user",
+                                content: `Start AI risk scoring again for ${analysisType}. Ask me the questions you need to collect structured inputs.`,
+                              };
+                              const nextMessages = [seedMessage];
+                              setMessages(nextMessages);
+                            }
+                          }}
+                          className="rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-semibold text-white hover:bg-white/10 transition-colors"
+                        >
+                          Restart scoring
+                        </button>
+                      </div>
+                    </div>
+                  ) : null}
                   <AnimatePresence mode="popLayout">
                     {messages.map((message) => (
                       <motion.div
@@ -347,12 +494,16 @@ export default function TurboAIPage() {
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
                   onKeyDown={handleKeyDown}
-                  placeholder={mode === "finance" ? t.turboAIPage.placeholder : "Ask me anything..."}
+                  placeholder={
+                    mode === "finance"
+                      ? t.turboAIPage.placeholder
+                      : "Answer with short facts: amount, income, contract, relationship, deadline"
+                  }
                   className="flex-1 rounded-xl border border-white/10 bg-white/5 py-3 pl-4 pr-12 text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50"
                 />
                 <button 
                   onClick={() => handleSend(input)}
-                  disabled={!input.trim() || isTyping}
+                  disabled={!input.trim() || isTyping || (mode === "analyze" && !!riskResult)}
                   className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-500 text-white transition-all hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed active:scale-95"
                 >
                   <Send className="h-4 w-4" />
