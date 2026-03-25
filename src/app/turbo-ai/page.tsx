@@ -7,6 +7,7 @@ import {
   Lightbulb
 } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import Navigation from "@/components/sections/navigation";
 import { useLanguage } from "@/lib/language-context";
 import { useAuth } from "@/lib/auth-context";
@@ -20,7 +21,31 @@ interface Message {
 
 type ChatMode = "finance" | "analyze";
 
-type AnalysisType = "loan" | "purchase" | "invest";
+type AnalysisType =
+  | "loan"
+  | "installment"
+  | "purchase"
+  | "order"
+  | "invest"
+  | "longterm_invest";
+
+type RiskField =
+  | "amount"
+  | "income"
+  | "contract"
+  | "relationship"
+  | "deadline"
+  | "contract_reason"
+  | "identity_verified"
+  | "past_defaults"
+  | "transparency"
+  | "urgency"
+  | "collateral_provided"
+  | "penalty_terms_present"
+  | "delivery_reliability"
+  | "guaranteed_return"
+  | "repayment_plan"
+  | "savings";
 
 type Unit = {
   id: string;
@@ -31,8 +56,9 @@ type Unit = {
 };
 
 export default function TurboAIPage() {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const { user } = useAuth();
+  const router = useRouter();
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [isTyping, setIsTyping] = useState(false);
@@ -40,60 +66,135 @@ export default function TurboAIPage() {
 
   const [analysisType, setAnalysisType] = useState<AnalysisType | null>(null);
   const [riskResult, setRiskResult] = useState<RiskResult | null>(null);
+  const [riskField, setRiskField] = useState<RiskField | null>(null);
+  const [hasRedirectedToDashboard, setHasRedirectedToDashboard] = useState(false);
+  const [analysisProgress, setAnalysisProgress] = useState(0);
 
   const financeUnits: Unit[] = [
     {
       id: "revenue-vs-profit",
-      title: "Revenue vs Profit",
-      description: "Learn the difference between revenue and profit with simple explanations.",
-      focus: "Teach the difference between revenue and profit using clear, beginner-friendly analogies and examples.",
+      title: "Выручка vs Прибыль",
+      description: "Поймите разницу между выручкой и прибылью простыми словами.",
+      focus: "Объясни разницу между выручкой и прибылью через понятные аналогии и примеры для новичков.",
       questions: [t.turboAIPage.q1],
     },
     {
       id: "compound-interest",
-      title: "Compound Interest",
-      description: "Understand how growth accelerates over time.",
-      focus: "Explain compound interest with intuition and a small numeric example.",
+      title: "Сложный процент",
+      description: "Поймите, как рост ускоряется со временем.",
+      focus: "Объясни сложный процент интуитивно и на небольшом числовом примере.",
       questions: [t.turboAIPage.q2],
     },
     {
       id: "diversification",
-      title: "Diversification",
-      description: "Reduce risk by spreading exposure.",
-      focus: "Explain diversification in simple terms and how it can reduce risk.",
+      title: "Диверсификация",
+      description: "Снижайте риск, распределяя вложения.",
+      focus: "Объясни диверсификацию простыми словами и как она помогает снижать риск.",
       questions: [t.turboAIPage.q3],
     },
     {
       id: "balance-sheet",
-      title: "Balance Sheet",
-      description: "Understand Assets, Liabilities, and Equity.",
-      focus: "Explain what a balance sheet is and how to read it.",
+      title: "Баланс",
+      description: "Разберитесь в активах, обязательствах и капитале.",
+      focus: "Объясни, что такое баланс, и покажи, как его читать.",
       questions: [t.turboAIPage.q4],
     },
     {
       id: "cash-flow",
-      title: "Cash Flow",
-      description: "Track money in and out (and why it can differ from profit).",
-      focus: "Connect cash flow concepts to real scenarios and explain why cash matters.",
-      questions: ["What is cash flow and how is it different from profit?"],
+      title: "Денежный поток",
+      description: "Отслеживайте деньги «внутрь» и «наружу» (и почему это может отличаться от прибыли).",
+      focus: "Свяжи понятия денежного потока с реальными ситуациями и объясни, почему важны деньги.",
+      questions: ["Что такое денежный поток и чем он отличается от прибыли?"],
     },
     {
       id: "budgeting",
-      title: "Budgeting",
-      description: "Build a beginner-friendly money plan.",
-      focus: "Help the user build a simple budgeting framework and explain how to start.",
-      questions: ["How do I start budgeting as a beginner?"],
+      title: "Бюджетирование",
+      description: "Соберите понятный план управления деньгами для новичка.",
+      focus: "Помоги пользователю построить простую систему бюджетирования и объясни, как начать.",
+      questions: ["Как начать бюджетирование с нуля?"],
     },
   ];
 
   const generalSuggestedQuestions = [
-    "How can I learn this topic faster?",
-    "Explain this concept like I'm new to it.",
-    "Give me a practical step-by-step plan.",
-    "Help me brainstorm ideas for my project.",
+    "Как быстрее разобраться в этой теме?",
+    "Объясни эту концепцию так, будто я только начинаю.",
+    "Дай практичный пошаговый план.",
+    "Помоги придумать идеи для моего проекта.",
   ];
 
   const [mode, setMode] = useState<ChatMode>("finance");
+
+  const analyzeLabels = {
+    relationshipKnown:
+      language === "en" ? "Known" : language === "uz" ? "Ma'lum" : "Известно",
+    relationshipUnknown:
+      language === "en" ? "Unknown" : language === "uz" ? "Noma'lum" : "Неизвестно",
+    contractYes: language === "en" ? "Yes" : language === "uz" ? "Ha" : "Да",
+    contractNo: language === "en" ? "No" : language === "uz" ? "Yo'q" : "Нет",
+    contractReasonVerbal:
+      language === "en" ? "Only verbal/oral" : language === "uz" ? "Faqat og'zaki" : "Только устные условия",
+    contractReasonMissingTerms:
+      language === "en" ? "No clear written terms" : language === "uz" ? "Aniq yozma shartlar yo'q" : "Нет понятных письменных условий",
+    contractReasonNotSure:
+      language === "en" ? "Not sure" : language === "uz" ? "Aniq emas" : "Не уверен(а)",
+    identityVerified:
+      language === "en" ? "Verified" : language === "uz" ? "Tasdiqlangan" : "Подтверждено",
+    identityPartial:
+      language === "en" ? "Partial" : language === "uz" ? "Qisman" : "Частично",
+    identityNotVerified:
+      language === "en" ? "Not verified" : language === "uz" ? "Tasdiqlanmagan" : "Не подтверждено",
+    pastNever:
+      language === "en" ? "Never" : language === "uz" ? "Hech qachon" : "Никогда",
+    pastOnce:
+      language === "en" ? "Once" : language === "uz" ? "Bir marta" : "Один раз",
+    pastMany:
+      language === "en" ? "Multiple times" : language === "uz" ? "Ko'p marta" : "Были многократно",
+    transparencyHigh:
+      language === "en" ? "High" : language === "uz" ? "Yuqori" : "Высокая",
+    transparencyMedium:
+      language === "en" ? "Medium" : language === "uz" ? "O'rtacha" : "Средняя",
+    transparencyLow:
+      language === "en" ? "Low" : language === "uz" ? "Past" : "Низкая",
+    urgencyLow:
+      language === "en" ? "Low" : language === "uz" ? "Past" : "Низкое",
+    urgencyMedium:
+      language === "en" ? "Medium" : language === "uz" ? "O'rtacha" : "Среднее",
+    urgencyHigh:
+      language === "en" ? "High" : language === "uz" ? "Yuqori" : "Высокое",
+    yesRisk: language === "en" ? "Yes" : language === "uz" ? "Ha" : "Да",
+    noRisk: language === "en" ? "No" : language === "uz" ? "Yo'q" : "Нет",
+    deliveryReliable:
+      language === "en" ? "Reliable" : language === "uz" ? "Ishonchli" : "Надежно",
+    deliveryUncertain:
+      language === "en" ? "Uncertain" : language === "uz" ? "Noaniq" : "Неясно",
+    deliveryUnknown:
+      language === "en" ? "Unknown" : language === "uz" ? "Noma'lum" : "Неизвестно",
+    repaymentConservative:
+      language === "en" ? "Conservative" : language === "uz" ? "Konservativ" : "Консервативно",
+    repaymentModerate:
+      language === "en" ? "Moderate" : language === "uz" ? "O'rtacha" : "Умеренно",
+    repaymentAggressive:
+      language === "en" ? "Aggressive" : language === "uz" ? "Agressiv" : "Агрессивно",
+    placeholderAnalyze:
+      language === "en"
+        ? "Answer step-by-step (chips or manual input)."
+        : language === "uz"
+          ? "Savollarni ketma-ket javob bering (chips yoki matn)."
+          : "Ответьте по шагам (кнопки или вручную).",
+    choosingMsg:
+      language === "en"
+        ? "Choose answer for the current question:"
+        : language === "uz"
+          ? "Joriy savol uchun javobni tanlang:"
+          : "Выберите ответ для текущего вопроса:",
+  };
+  useEffect(() => {
+    // Next.js 15 requires Suspense for useSearchParams(). We instead read from window.
+    const params = new URLSearchParams(window.location.search);
+    const modeParam = params.get("mode");
+    if (modeParam === "analyze") setMode("analyze");
+    if (modeParam === "finance") setMode("finance");
+  }, []);
   const [activeUnitId, setActiveUnitId] = useState<string>(
     financeUnits[0]?.id ?? "revenue-vs-profit"
   );
@@ -124,8 +225,23 @@ export default function TurboAIPage() {
     setIsTyping(false);
     setInput("");
     setRiskResult(null);
+    setRiskField(null);
+    setAnalysisProgress(0);
+    setHasRedirectedToDashboard(false);
     if (mode !== "analyze") setAnalysisType(null);
   }, [mode, activeUnitId]);
+
+  useEffect(() => {
+    if (mode !== "analyze") return;
+    if (!riskResult) return;
+    if (hasRedirectedToDashboard) return;
+
+    setHasRedirectedToDashboard(true);
+    const timer = window.setTimeout(() => {
+      router.push("/dashboard?risk=latest");
+    }, 1500);
+    return () => window.clearTimeout(timer);
+  }, [mode, riskResult, hasRedirectedToDashboard, router]);
 
   const handleSend = async (text: string) => {
     const userText = text.trim();
@@ -147,6 +263,7 @@ export default function TurboAIPage() {
           unit: mode === "finance" ? { title: activeUnit.title, focus: activeUnit.focus } : undefined,
           analysisType: mode === "analyze" ? analysisType : undefined,
           userId: user?.id ?? null,
+          language,
         }),
       });
 
@@ -163,15 +280,48 @@ export default function TurboAIPage() {
           verdict: data.verdict,
           confidence: data.confidence ?? 0,
           reasons: Array.isArray(data.reasons) ? data.reasons : [],
+          inputData: data.inputData ?? data.input_data ?? undefined,
+          language: data.language ?? language,
         });
+        setRiskField(null);
         return;
+      }
+
+      if (mode === "analyze") {
+        const rawField = data?.missingField;
+        const nextField: RiskField | null =
+          typeof rawField === "string" &&
+          (rawField === "amount" ||
+            rawField === "income" ||
+            rawField === "contract" ||
+            rawField === "relationship" ||
+            rawField === "deadline" ||
+            rawField === "contract_reason" ||
+            rawField === "identity_verified" ||
+            rawField === "past_defaults" ||
+            rawField === "transparency" ||
+            rawField === "urgency" ||
+            rawField === "collateral_provided" ||
+            rawField === "penalty_terms_present" ||
+            rawField === "delivery_reliability" ||
+            rawField === "guaranteed_return" ||
+            rawField === "repayment_plan" ||
+            rawField === "savings")
+            ? (rawField as RiskField)
+            : null;
+        setRiskField(nextField);
+        if (typeof data?.progress === "number") {
+          setAnalysisProgress(Math.max(0, Math.min(100, data.progress)));
+        } else {
+          setAnalysisProgress(0);
+        }
       }
 
       const assistantMessage: Message = {
         id: Date.now() + 1,
         role: "assistant",
         content:
-          data?.text || (typeof raw === "string" && raw ? raw : "Sorry, I couldn't generate a response."),
+          data?.text || (typeof raw === "string" && raw ? raw : "Не удалось сгенерировать ответ. Попробуйте ещё раз."),
       };
       setMessages((prev) => [...prev, assistantMessage]);
     } catch (err) {
@@ -179,7 +329,7 @@ export default function TurboAIPage() {
       const errorMessage: Message = {
         id: Date.now() + 1,
         role: "assistant",
-        content: "Something went wrong. Please try again.",
+        content: "Что-то пошло не так. Попробуйте ещё раз.",
       };
       setMessages((prev) => [...prev, errorMessage]);
     } finally {
@@ -226,24 +376,28 @@ export default function TurboAIPage() {
           <div className="mb-6">
             <div className="flex flex-wrap items-center gap-2 mb-4">
               <button
-                onClick={() => setMode("finance")}
+                onClick={() => {
+                  setMode("finance");
+                }}
                 className={`px-4 py-2 rounded-xl text-sm font-medium transition-all border ${
                   mode === "finance"
                     ? "bg-blue-500/20 text-blue-400 border-blue-500/30"
                     : "bg-white/5 text-slate-300 border-white/10 hover:bg-white/10 hover:text-white"
                 }`}
               >
-                Finance Tutor
+                Финансовый репетитор
               </button>
               <button
-                onClick={() => setMode("analyze")}
+                onClick={() => {
+                  setMode("analyze");
+                }}
                 className={`px-4 py-2 rounded-xl text-sm font-medium transition-all border ${
                   mode === "analyze"
                     ? "bg-purple-500/20 text-purple-400 border-purple-500/30"
                     : "bg-white/5 text-slate-300 border-white/10 hover:bg-white/10 hover:text-white"
                 }`}
               >
-                Risk Scoring
+                Оценка риска
               </button>
             </div>
 
@@ -273,23 +427,30 @@ export default function TurboAIPage() {
               <div className="flex gap-3 overflow-x-auto pb-2">
                 {(
                   [
-                    { type: "loan" as const, title: "💸 Give a loan" },
-                    { type: "purchase" as const, title: "🛒 Make a purchase" },
-                    { type: "invest" as const, title: "📈 Invest" },
+                    { type: "loan" as const, title: "💸 Займ" },
+                    { type: "installment" as const, title: "🏦 Рассрочка" },
+                    { type: "purchase" as const, title: "🛒 Покупка" },
+                    { type: "order" as const, title: "📦 Заказ/поставка" },
+                    { type: "invest" as const, title: "📈 Инвестирование" },
+                    {
+                      type: "longterm_invest" as const,
+                      title: "🧩 Долгосрочные вложения",
+                    },
                   ] as const
                 ).map((c) => (
                   <button
-                    key={c.type}
+                    key={c.type + c.title}
                     onClick={() => {
                       setAnalysisType(c.type);
                       setRiskResult(null);
+                      setRiskField(null);
                       setMessages([]);
                       setInput("");
 
                       const seedMessage: Message = {
                         id: Date.now(),
                         role: "user",
-                        content: `I selected: ${c.title}. Start AI risk scoring. Ask me the questions you need to collect structured inputs for an accurate risk score.`,
+                        content: `Я выбрал: ${c.title}. Начинаем оценку риска. Задавай вопросы, чтобы собрать структурированные данные для точной оценки риска.`,
                       };
                       const nextMessages = [seedMessage];
                       setMessages(nextMessages);
@@ -308,6 +469,7 @@ export default function TurboAIPage() {
                               mode: "analyze",
                               analysisType: c.type,
                               userId: user?.id ?? null,
+                              language,
                             }),
                           });
 
@@ -321,13 +483,53 @@ export default function TurboAIPage() {
                               verdict: data.verdict,
                               confidence: data.confidence ?? 0,
                               reasons: Array.isArray(data.reasons) ? data.reasons : [],
+                              inputData: data.inputData ?? data.input_data ?? undefined,
+                              language: data.language ?? language,
                             });
+                            setRiskField(null);
+                            setAnalysisProgress(100);
                           } else {
+                            const rawField = data?.missingField;
+                            if (
+                              typeof rawField === "string" &&
+                              (rawField === "amount" ||
+                                rawField === "income" ||
+                                rawField === "contract" ||
+                                rawField === "relationship" ||
+                                rawField === "deadline" ||
+                                rawField === "contract_reason" ||
+                                rawField === "identity_verified" ||
+                                rawField === "past_defaults" ||
+                                rawField === "transparency" ||
+                                rawField === "urgency" ||
+                                rawField === "collateral_provided" ||
+                                rawField === "penalty_terms_present" ||
+                                rawField === "delivery_reliability" ||
+                                rawField === "guaranteed_return" ||
+                                rawField === "repayment_plan" ||
+                                rawField === "savings")
+                            ) {
+                              setRiskField(rawField);
+                              if (typeof data?.progress === "number") {
+                                setAnalysisProgress(
+                                  Math.max(0, Math.min(100, data.progress))
+                                );
+                              } else {
+                                setAnalysisProgress(0);
+                              }
+                            } else {
+                              setRiskField(null);
+                              setAnalysisProgress(0);
+                            }
+
                             const assistantMessage: Message = {
                               id: Date.now() + 1,
                               role: "assistant",
                               content:
-                                data?.text || (typeof raw === "string" && raw ? raw : "Got it. Please answer the next question."),
+                                data?.text ||
+                                (typeof raw === "string" && raw
+                                  ? raw
+                                  : "Понял. Ответьте на следующий вопрос."),
                             };
                             setMessages((prev) => [...prev, assistantMessage]);
                           }
@@ -336,7 +538,7 @@ export default function TurboAIPage() {
                           const assistantMessage: Message = {
                             id: Date.now() + 1,
                             role: "assistant",
-                            content: "Something went wrong. Please try again.",
+                            content: "Что-то пошло не так. Попробуйте ещё раз.",
                           };
                           setMessages((prev) => [...prev, assistantMessage]);
                         } finally {
@@ -354,7 +556,7 @@ export default function TurboAIPage() {
                       <Lightbulb className="h-4 w-4 text-purple-400" />
                       <span className="text-sm font-semibold text-white">{c.title}</span>
                     </div>
-                    <p className="text-xs text-slate-400">Answer short facts to get a risk verdict.</p>
+                    <p className="text-xs text-slate-400">Ответьте короткими фактами, чтобы получить оценку риска.</p>
                   </button>
                 ))}
               </div>
@@ -398,7 +600,7 @@ export default function TurboAIPage() {
                     </div>
                   ) : (
                     <div className="text-slate-400 max-w-md">
-                      Choose a scenario above to start risk scoring.
+                      Выберите сценарий выше, чтобы начать оценку риска.
                     </div>
                   )}
                 </motion.div>
@@ -412,19 +614,26 @@ export default function TurboAIPage() {
                           onClick={() => {
                             if (!analysisType) return;
                             setRiskResult(null);
+                            setRiskField(null);
                             setInput("");
 
                             const title =
                               analysisType === "loan"
-                                ? "💸 Give a loan"
-                                : analysisType === "purchase"
-                                  ? "🛒 Make a purchase"
-                                  : "📈 Invest";
+                                ? "💸 Займ"
+                                : analysisType === "installment"
+                                  ? "🏦 Рассрочка"
+                                  : analysisType === "purchase"
+                                    ? "🛒 Покупка"
+                                    : analysisType === "order"
+                                      ? "📦 Заказ/поставка"
+                                      : analysisType === "invest"
+                                        ? "📈 Инвестирование"
+                                        : "🧩 Долгосрочные вложения";
 
                             const seedMessage: Message = {
                               id: Date.now(),
                               role: "user",
-                              content: `I selected: ${title}. Start AI risk scoring again. Ask me the questions you need to collect structured inputs for an accurate risk score.`,
+                              content: `Я выбрал: ${title}. Начинаем оценку риска заново. Задавай вопросы, чтобы собрать структурированные данные для точной оценки риска.`,
                             };
                             const nextMessages = [seedMessage];
                             setMessages(nextMessages);
@@ -443,6 +652,7 @@ export default function TurboAIPage() {
                                     mode: "analyze",
                                     analysisType,
                                     userId: user?.id ?? null,
+                                    language,
                                   }),
                                 });
 
@@ -456,15 +666,55 @@ export default function TurboAIPage() {
                                     verdict: data.verdict,
                                     confidence: data.confidence ?? 0,
                                     reasons: Array.isArray(data.reasons) ? data.reasons : [],
+                                    inputData: data.inputData ?? data.input_data ?? undefined,
+                                    language: data.language ?? language,
                                   });
+                                  setAnalysisProgress(100);
+                                  setRiskField(null);
                                   return;
+                                }
+
+                                if (typeof data?.missingField === "string") {
+                                  const rawField = data.missingField;
+                                  if (
+                                    rawField === "amount" ||
+                                    rawField === "income" ||
+                                    rawField === "contract" ||
+                                    rawField === "relationship" ||
+                                    rawField === "deadline" ||
+                                    rawField === "contract_reason" ||
+                                    rawField === "identity_verified" ||
+                                    rawField === "past_defaults" ||
+                                    rawField === "transparency" ||
+                                    rawField === "urgency" ||
+                                    rawField === "collateral_provided" ||
+                                    rawField === "penalty_terms_present" ||
+                                    rawField === "delivery_reliability" ||
+                                    rawField === "guaranteed_return" ||
+                                    rawField === "repayment_plan" ||
+                                    rawField === "savings"
+                                  ) {
+                                    setRiskField(rawField);
+                                    if (typeof data?.progress === "number") {
+                                      setAnalysisProgress(Math.max(0, Math.min(100, data.progress)));
+                                    } else {
+                                      setAnalysisProgress(0);
+                                    }
+                                  } else {
+                                    setRiskField(null);
+                                    setAnalysisProgress(0);
+                                  }
+                                } else {
+                                  setRiskField(null);
+                                  setAnalysisProgress(0);
                                 }
 
                                 const assistantMessage: Message = {
                                   id: Date.now() + 1,
                                   role: "assistant",
                                   content:
-                                    data?.text || (typeof raw === "string" && raw ? raw : "Got it. Please answer the next question."),
+                                    data?.text ||
+                                    (typeof raw === "string" && raw ? raw : "Понял. Ответьте на следующий вопрос."),
                                 };
                                 setMessages((prev) => [...prev, assistantMessage]);
                               } catch (err) {
@@ -472,7 +722,7 @@ export default function TurboAIPage() {
                                 const assistantMessage: Message = {
                                   id: Date.now() + 1,
                                   role: "assistant",
-                                  content: "Something went wrong. Please try again.",
+                                  content: "Что-то пошло не так. Попробуйте ещё раз.",
                                 };
                                 setMessages((prev) => [...prev, assistantMessage]);
                               } finally {
@@ -482,7 +732,7 @@ export default function TurboAIPage() {
                           }}
                           className="rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-semibold text-white hover:bg-white/10 transition-colors"
                         >
-                          Restart scoring
+                          Начать заново
                         </button>
                       </div>
                     </div>
@@ -509,7 +759,9 @@ export default function TurboAIPage() {
                           <div className={`rounded-2xl px-4 py-3 ${
                             message.role === "user"
                               ? "bg-blue-600 text-white rounded-tr-none"
-                              : "bg-white/5 border border-white/10 text-slate-300 rounded-tl-none"
+                              : mode === "analyze"
+                                ? "bg-purple-500/10 border border-purple-500/20 text-slate-200 rounded-tl-none"
+                                : "bg-white/5 border border-white/10 text-slate-300 rounded-tl-none"
                           }`}>
                             <div className="text-sm leading-relaxed whitespace-pre-wrap prose prose-invert prose-sm max-w-none">
                               {message.content.split('\n').map((line, i) => {
@@ -558,6 +810,447 @@ export default function TurboAIPage() {
 
             {/* Input Area */}
             <div className="border-t border-white/10 p-4">
+              {mode === "analyze" && riskField && !riskResult ? (
+                <div className="mb-3 rounded-2xl border border-white/10 bg-white/5 px-4 py-3">
+                  <div className="mb-3 h-2 w-full overflow-hidden rounded-full bg-white/10">
+                    <motion.div
+                      initial={false}
+                      animate={{ width: `${analysisProgress}%` }}
+                      className="h-full rounded-full bg-gradient-to-r from-purple-500 to-blue-500"
+                    />
+                  </div>
+                  <p className="text-xs text-slate-400 mb-2">{analyzeLabels.choosingMsg}</p>
+                  <div className="flex flex-wrap items-center justify-center gap-2">
+                    {riskField === "relationship" ? (
+                      <>
+                        <button
+                          type="button"
+                          disabled={isTyping}
+                          onClick={() => handleSend("known")}
+                          className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm font-semibold text-white hover:bg-white/10 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          🤝 {analyzeLabels.relationshipKnown}
+                        </button>
+                        <button
+                          type="button"
+                          disabled={isTyping}
+                          onClick={() => handleSend("unknown")}
+                          className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm font-semibold text-white hover:bg-white/10 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          🕵️ {analyzeLabels.relationshipUnknown}
+                        </button>
+                      </>
+                    ) : null}
+
+                    {riskField === "contract" ? (
+                      <>
+                        <button
+                          type="button"
+                          disabled={isTyping}
+                          onClick={() => handleSend("true")}
+                          className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm font-semibold text-white hover:bg-white/10 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          📝 {analyzeLabels.contractYes}
+                        </button>
+                        <button
+                          type="button"
+                          disabled={isTyping}
+                          onClick={() => handleSend("false")}
+                          className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm font-semibold text-white hover:bg-white/10 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          ⛔ {analyzeLabels.contractNo}
+                        </button>
+                      </>
+                    ) : null}
+
+                    {riskField === "contract_reason" ? (
+                      <>
+                        <button
+                          type="button"
+                          disabled={isTyping}
+                          onClick={() => handleSend("verbal")}
+                          className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm font-semibold text-white hover:bg-white/10 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          🗣️ {analyzeLabels.contractReasonVerbal}
+                        </button>
+                        <button
+                          type="button"
+                          disabled={isTyping}
+                          onClick={() => handleSend("missing_terms")}
+                          className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm font-semibold text-white hover:bg-white/10 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          🧾 {analyzeLabels.contractReasonMissingTerms}
+                        </button>
+                        <button
+                          type="button"
+                          disabled={isTyping}
+                          onClick={() => handleSend("not_sure")}
+                          className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm font-semibold text-white hover:bg-white/10 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          🤷 {analyzeLabels.contractReasonNotSure}
+                        </button>
+                      </>
+                    ) : null}
+
+                    {riskField === "identity_verified" ? (
+                      <>
+                        <button
+                          type="button"
+                          disabled={isTyping}
+                          onClick={() => handleSend("verified")}
+                          className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm font-semibold text-white hover:bg-white/10 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          ✅ {analyzeLabels.identityVerified}
+                        </button>
+                        <button
+                          type="button"
+                          disabled={isTyping}
+                          onClick={() => handleSend("partial")}
+                          className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm font-semibold text-white hover:bg-white/10 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          🟨 {analyzeLabels.identityPartial}
+                        </button>
+                        <button
+                          type="button"
+                          disabled={isTyping}
+                          onClick={() => handleSend("not_verified")}
+                          className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm font-semibold text-white hover:bg-white/10 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          ❌ {analyzeLabels.identityNotVerified}
+                        </button>
+                      </>
+                    ) : null}
+
+                    {riskField === "past_defaults" ? (
+                      <>
+                        <button
+                          type="button"
+                          disabled={isTyping}
+                          onClick={() => handleSend("never")}
+                          className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm font-semibold text-white hover:bg-white/10 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          📌 {analyzeLabels.pastNever}
+                        </button>
+                        <button
+                          type="button"
+                          disabled={isTyping}
+                          onClick={() => handleSend("once")}
+                          className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm font-semibold text-white hover:bg-white/10 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          ⚠️ {analyzeLabels.pastOnce}
+                        </button>
+                        <button
+                          type="button"
+                          disabled={isTyping}
+                          onClick={() => handleSend("many")}
+                          className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm font-semibold text-white hover:bg-white/10 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          🚨 {analyzeLabels.pastMany}
+                        </button>
+                      </>
+                    ) : null}
+
+                    {riskField === "transparency" ? (
+                      <>
+                        <button
+                          type="button"
+                          disabled={isTyping}
+                          onClick={() => handleSend("high")}
+                          className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm font-semibold text-white hover:bg-white/10 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          🧾 {analyzeLabels.transparencyHigh}
+                        </button>
+                        <button
+                          type="button"
+                          disabled={isTyping}
+                          onClick={() => handleSend("medium")}
+                          className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm font-semibold text-white hover:bg-white/10 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          🟨 {analyzeLabels.transparencyMedium}
+                        </button>
+                        <button
+                          type="button"
+                          disabled={isTyping}
+                          onClick={() => handleSend("low")}
+                          className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm font-semibold text-white hover:bg-white/10 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          🕳️ {analyzeLabels.transparencyLow}
+                        </button>
+                      </>
+                    ) : null}
+
+                    {riskField === "urgency" ? (
+                      <>
+                        <button
+                          type="button"
+                          disabled={isTyping}
+                          onClick={() => handleSend("low")}
+                          className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm font-semibold text-white hover:bg-white/10 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          🧘 {analyzeLabels.urgencyLow}
+                        </button>
+                        <button
+                          type="button"
+                          disabled={isTyping}
+                          onClick={() => handleSend("medium")}
+                          className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm font-semibold text-white hover:bg-white/10 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          ⏳ {analyzeLabels.urgencyMedium}
+                        </button>
+                        <button
+                          type="button"
+                          disabled={isTyping}
+                          onClick={() => handleSend("high")}
+                          className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm font-semibold text-white hover:bg-white/10 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          🚨 {analyzeLabels.urgencyHigh}
+                        </button>
+                      </>
+                    ) : null}
+
+                    {riskField === "collateral_provided" ? (
+                      <>
+                        <button
+                          type="button"
+                          disabled={isTyping}
+                          onClick={() => handleSend("true")}
+                          className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm font-semibold text-white hover:bg-white/10 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          🛡️ {analyzeLabels.yesRisk}
+                        </button>
+                        <button
+                          type="button"
+                          disabled={isTyping}
+                          onClick={() => handleSend("false")}
+                          className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm font-semibold text-white hover:bg-white/10 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          ⛔ {analyzeLabels.noRisk}
+                        </button>
+                      </>
+                    ) : null}
+
+                    {riskField === "penalty_terms_present" ? (
+                      <>
+                        <button
+                          type="button"
+                          disabled={isTyping}
+                          onClick={() => handleSend("true")}
+                          className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm font-semibold text-white hover:bg-white/10 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          ⚖️ {analyzeLabels.yesRisk}
+                        </button>
+                        <button
+                          type="button"
+                          disabled={isTyping}
+                          onClick={() => handleSend("false")}
+                          className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm font-semibold text-white hover:bg-white/10 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          ⛔ {analyzeLabels.noRisk}
+                        </button>
+                      </>
+                    ) : null}
+
+                    {riskField === "delivery_reliability" ? (
+                      <>
+                        <button
+                          type="button"
+                          disabled={isTyping}
+                          onClick={() => handleSend("reliable")}
+                          className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm font-semibold text-white hover:bg-white/10 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          📦 {analyzeLabels.deliveryReliable}
+                        </button>
+                        <button
+                          type="button"
+                          disabled={isTyping}
+                          onClick={() => handleSend("uncertain")}
+                          className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm font-semibold text-white hover:bg-white/10 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          🟨 {analyzeLabels.deliveryUncertain}
+                        </button>
+                        <button
+                          type="button"
+                          disabled={isTyping}
+                          onClick={() => handleSend("unknown")}
+                          className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm font-semibold text-white hover:bg-white/10 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          ❓ {analyzeLabels.deliveryUnknown}
+                        </button>
+                      </>
+                    ) : null}
+
+                    {riskField === "guaranteed_return" ? (
+                      <>
+                        <button
+                          type="button"
+                          disabled={isTyping}
+                          onClick={() => handleSend("true")}
+                          className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm font-semibold text-white hover:bg-white/10 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          ⚠️ {analyzeLabels.yesRisk}
+                        </button>
+                        <button
+                          type="button"
+                          disabled={isTyping}
+                          onClick={() => handleSend("false")}
+                          className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm font-semibold text-white hover:bg-white/10 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          ✅ {analyzeLabels.noRisk}
+                        </button>
+                      </>
+                    ) : null}
+
+                    {riskField === "repayment_plan" ? (
+                      <>
+                        <button
+                          type="button"
+                          disabled={isTyping}
+                          onClick={() => handleSend("conservative")}
+                          className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm font-semibold text-white hover:bg-white/10 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          🧠 {analyzeLabels.repaymentConservative}
+                        </button>
+                        <button
+                          type="button"
+                          disabled={isTyping}
+                          onClick={() => handleSend("moderate")}
+                          className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm font-semibold text-white hover:bg-white/10 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          ⚖️ {analyzeLabels.repaymentModerate}
+                        </button>
+                        <button
+                          type="button"
+                          disabled={isTyping}
+                          onClick={() => handleSend("aggressive")}
+                          className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm font-semibold text-white hover:bg-white/10 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          🔥 {analyzeLabels.repaymentAggressive}
+                        </button>
+                      </>
+                    ) : null}
+
+                    {riskField === "savings" ? (
+                      <>
+                        <button
+                          type="button"
+                          disabled={isTyping}
+                          onClick={() => handleSend("1000")}
+                          className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm font-semibold text-white hover:bg-white/10 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          💼 1000
+                        </button>
+                        <button
+                          type="button"
+                          disabled={isTyping}
+                          onClick={() => handleSend("5000")}
+                          className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm font-semibold text-white hover:bg-white/10 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          💼 5000
+                        </button>
+                        <button
+                          type="button"
+                          disabled={isTyping}
+                          onClick={() => handleSend("10000")}
+                          className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm font-semibold text-white hover:bg-white/10 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          💼 10000
+                        </button>
+                      </>
+                    ) : null}
+
+                    {riskField === "amount" ? (
+                      <>
+                        <button
+                          type="button"
+                          disabled={isTyping}
+                          onClick={() => handleSend("1000")}
+                          className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm font-semibold text-white hover:bg-white/10 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          💰 1000
+                        </button>
+                        <button
+                          type="button"
+                          disabled={isTyping}
+                          onClick={() => handleSend("5000")}
+                          className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm font-semibold text-white hover:bg-white/10 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          💰 5000
+                        </button>
+                        <button
+                          type="button"
+                          disabled={isTyping}
+                          onClick={() => handleSend("10000")}
+                          className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm font-semibold text-white hover:bg-white/10 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          💰 10000
+                        </button>
+                      </>
+                    ) : null}
+
+                    {riskField === "income" ? (
+                      <>
+                        <button
+                          type="button"
+                          disabled={isTyping}
+                          onClick={() => handleSend("2000")}
+                          className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm font-semibold text-white hover:bg-white/10 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          👤 2000
+                        </button>
+                        <button
+                          type="button"
+                          disabled={isTyping}
+                          onClick={() => handleSend("5000")}
+                          className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm font-semibold text-white hover:bg-white/10 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          👤 5000
+                        </button>
+                        <button
+                          type="button"
+                          disabled={isTyping}
+                          onClick={() => handleSend("10000")}
+                          className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm font-semibold text-white hover:bg-white/10 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          👤 10000
+                        </button>
+                      </>
+                    ) : null}
+
+                    {riskField === "deadline" ? (
+                      <>
+                        <button
+                          type="button"
+                          disabled={isTyping}
+                          onClick={() => handleSend("14")}
+                          className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm font-semibold text-white hover:bg-white/10 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          ⏳ 14 дней
+                        </button>
+                        <button
+                          type="button"
+                          disabled={isTyping}
+                          onClick={() => handleSend("30")}
+                          className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm font-semibold text-white hover:bg-white/10 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          ⏳ 30 дней
+                        </button>
+                        <button
+                          type="button"
+                          disabled={isTyping}
+                          onClick={() => handleSend("60")}
+                          className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm font-semibold text-white hover:bg-white/10 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          ⏳ 60 дней
+                        </button>
+                      </>
+                    ) : null}
+                  </div>
+                  <p className="text-[11px] text-slate-500 mt-2 text-center">
+                    Если нет подходящего варианта — введите ответ вручную.
+                  </p>
+                </div>
+              ) : null}
+
               <div className="relative flex items-center gap-2">
                 <input
                   type="text"
@@ -567,7 +1260,7 @@ export default function TurboAIPage() {
                   placeholder={
                     mode === "finance"
                       ? t.turboAIPage.placeholder
-                      : "Answer with short facts: amount, income, contract, relationship, deadline"
+                      : analyzeLabels.placeholderAnalyze
                   }
                   className="flex-1 rounded-xl border border-white/10 bg-white/5 py-3 pl-4 pr-12 text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50"
                 />
@@ -582,7 +1275,7 @@ export default function TurboAIPage() {
               <p className="text-xs text-slate-500 mt-2 text-center">
                 {mode === "finance"
                   ? t.turboAIPage.disclaimer
-                  : "General AI explanations are for learning. For professional decisions, consult a qualified expert."}
+                  : "Объяснения ИИ предназначены для обучения. Для профессиональных решений проконсультируйтесь с квалифицированным специалистом."}
               </p>
             </div>
           </div>

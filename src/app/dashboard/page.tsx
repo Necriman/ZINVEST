@@ -11,6 +11,8 @@ import Footer from "@/components/sections/footer";
 import { UNIT_META, UNIT_TESTS, type UnitKey } from "@/lib/unit-test-content";
 import { useAuth } from "@/lib/auth-context";
 import { getSupabase } from "@/lib/supabase";
+import { useLanguage } from "@/lib/language-context";
+import RiskResultCard, { type RiskResult } from "@/components/RiskResult";
 
 function formatRelativeTime(msLeft: number) {
   const ms = Math.max(0, msLeft);
@@ -24,6 +26,7 @@ export default function DashboardPage() {
   const router = useRouter();
   const { user } = useAuth();
   const supabase = getSupabase();
+  const { language } = useLanguage();
 
   const defaultUnit = UNIT_META[0]?.key ?? "finance-fundamentals";
   const [selectedUnit, setSelectedUnit] = useState<UnitKey>(defaultUnit);
@@ -48,6 +51,17 @@ export default function DashboardPage() {
   } | null>(null);
 
   const [premiumExpiresAt, setPremiumExpiresAt] = useState<string | null>(null);
+
+  const [riskAnalyses, setRiskAnalyses] = useState<
+    Array<{
+      id: string;
+      type: string;
+      input_data: any;
+      result: any;
+      created_at: string;
+    }>
+  >([]);
+  const [selectedRiskAnalysisId, setSelectedRiskAnalysisId] = useState<string | null>(null);
 
   const premiumActive = useMemo(() => {
     if (!premiumExpiresAt) return false;
@@ -107,6 +121,52 @@ export default function DashboardPage() {
     fetchYourBest();
     fetchTop3();
   }, [supabase, user, selectedUnit]);
+
+  useEffect(() => {
+    if (!supabase || !user) return;
+    const fetchRiskAnalyses = async () => {
+      const { data } = await supabase
+        .from("analyses")
+        .select("id,type,input_data,result,created_at")
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: false })
+        .limit(10);
+      setRiskAnalyses((data ?? []) as any);
+    };
+    fetchRiskAnalyses();
+  }, [supabase, user]);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const risk = params.get("risk");
+    if (risk === "latest") {
+      setSelectedRiskAnalysisId(null); // "null" means we'll take the newest after fetch
+      return;
+    }
+    const analysisId = params.get("analysisId");
+    if (analysisId) setSelectedRiskAnalysisId(analysisId);
+  }, []);
+
+  const selectedRiskAnalysis = useMemo(() => {
+    if (!riskAnalyses.length) return null;
+    if (selectedRiskAnalysisId) {
+      return riskAnalyses.find((a) => a.id === selectedRiskAnalysisId) ?? riskAnalyses[0];
+    }
+    return riskAnalyses[0];
+  }, [riskAnalyses, selectedRiskAnalysisId]);
+
+  const selectedRiskResult: RiskResult | null = useMemo(() => {
+    if (!selectedRiskAnalysis) return null;
+    const r = selectedRiskAnalysis.result ?? {};
+    return {
+      risk: Number(r.risk ?? 0),
+      verdict: String(r.verdict ?? ""),
+      confidence: Number(r.confidence ?? 0),
+      reasons: Array.isArray(r.reasons) ? r.reasons : [],
+      inputData: selectedRiskAnalysis.input_data,
+      language: (r.language as any) ?? language,
+    };
+  }, [selectedRiskAnalysis]);
 
   const premiumLeftMs = premiumExpiresAt ? new Date(premiumExpiresAt).getTime() - Date.now() : 0;
 
@@ -328,6 +388,62 @@ export default function DashboardPage() {
                       <p className="text-sm text-slate-400">No leaderboard yet for this unit.</p>
                     )}
                   </div>
+                </div>
+
+                {/* Risk scoring */}
+                <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-6">
+                  <div className="flex items-center justify-between gap-4 mb-4">
+                    <div className="flex items-center gap-2">
+                      <Sparkles className="h-5 w-5 text-purple-400" />
+                      <p className="text-sm font-semibold text-white">
+                        {language === "en" ? "Risk Scoring" : language === "uz" ? "Xavf tahlili" : "Оценка риска"}
+                      </p>
+                    </div>
+                    <button
+                      onClick={() => router.push("/turbo-ai?mode=analyze")}
+                      className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-xs font-semibold text-white hover:bg-white/10 transition-colors"
+                    >
+                      {language === "en" ? "New" : language === "uz" ? "Yangi" : "Новая оценка"}
+                    </button>
+                  </div>
+
+                  {selectedRiskResult ? (
+                    <div className="space-y-4">
+                      <RiskResultCard result={selectedRiskResult} />
+
+                      {riskAnalyses.length > 1 ? (
+                        <div className="space-y-2">
+                          <p className="text-xs text-slate-400">
+                            {language === "en" ? "Recent attempts" : language === "uz" ? "Yaqinda" : "Недавние попытки"}
+                          </p>
+                          <div className="flex flex-wrap gap-2">
+                            {riskAnalyses.slice(0, 6).map((a) => {
+                              const isActive = a.id === selectedRiskAnalysis?.id;
+                              const rr = a.result ?? {};
+                              const label = `${Math.round(Number(rr.risk ?? 0))}%`;
+                              return (
+                                <button
+                                  key={a.id}
+                                  onClick={() => setSelectedRiskAnalysisId(a.id)}
+                                  className={`rounded-xl border px-3 py-2 text-xs font-semibold transition-colors ${
+                                    isActive
+                                      ? "border-purple-500/30 bg-purple-500/15 text-purple-200"
+                                      : "border-white/10 bg-white/5 text-slate-200 hover:bg-white/10 hover:border-white/20"
+                                  }`}
+                                >
+                                  {label}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      ) : null}
+                    </div>
+                  ) : (
+                    <p className="text-sm text-slate-400">
+                      {language === "en" ? "No risk analyses yet." : language === "uz" ? "Hali tahlil yo'q." : "Пока нет оценок риска."}
+                    </p>
+                  )}
                 </div>
               </div>
             </div>

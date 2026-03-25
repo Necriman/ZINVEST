@@ -13,7 +13,27 @@ import { useLanguage } from "@/lib/language-context";
 import AuthGate from "@/components/auth-gate";
 
 export default function PersonalFinancePage() {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
+
+  const pdfUrlByLessonId = (lessonId: number) => {
+    if (lessonId === 1) {
+      if (language === "ru") return "/pdfs/Finance_Unit1_Russian_Zinvest.pdf";
+      if (language === "uz") return "/pdfs/Finance_Unit1_Uzbek_Zinvest.pdf";
+      return "/pdfs/Finance_Unit1_English_Zinvest.pdf";
+    }
+    if (lessonId === 2) {
+      if (language === "ru") return "/pdfs/Finance_Unit2_Russian_Zinvest.pdf";
+      if (language === "uz") return "/pdfs/Finance_Unit2_Uzbek_Zinvest.pdf";
+      return "/pdfs/Finance_Unit2_English_Zinvest.pdf";
+    }
+    return null;
+  };
+
+  const openPdfForLessonId = (lessonId: number) => {
+    const url = pdfUrlByLessonId(lessonId);
+    if (!url) return;
+    window.open(url, "_blank", "noopener,noreferrer");
+  };
 
   const LESSONS = [
     { id: 1, title: t.trackPage.financialMindset, duration: "10 min", completed: true, unlocked: true },
@@ -117,7 +137,12 @@ export default function PersonalFinancePage() {
               <div className="glass-card rounded-2xl overflow-hidden">
                 <div className="relative aspect-video bg-gradient-to-br from-slate-800 to-slate-900 flex items-center justify-center">
                   <div className="absolute inset-0 bg-amber-500/5"></div>
-                  <div className="group relative flex h-20 w-20 cursor-pointer items-center justify-center rounded-full bg-amber-500/10 transition-all hover:scale-110 hover:bg-amber-500/20">
+                  <div
+                    className="group relative flex h-20 w-20 cursor-pointer items-center justify-center rounded-full bg-amber-500/10 transition-all hover:scale-110 hover:bg-amber-500/20"
+                    onClick={() => openPdfForLessonId(selectedLesson.id)}
+                    role="button"
+                    tabIndex={0}
+                  >
                     <div className="absolute inset-0 animate-ping rounded-full bg-amber-400/20"></div>
                     <Play className="h-8 w-8 fill-amber-500 text-amber-500 transition-transform group-hover:translate-x-0.5" />
                   </div>
@@ -135,7 +160,10 @@ export default function PersonalFinancePage() {
                   </p>
 
                   <div className="flex flex-wrap items-center gap-4">
-                    <button className="flex items-center gap-2 rounded-full bg-amber-500 px-6 py-3 text-sm font-semibold text-white transition-all hover:bg-amber-600 active:scale-95">
+                    <button
+                      onClick={() => openPdfForLessonId(selectedLesson.id)}
+                      className="flex items-center gap-2 rounded-full bg-amber-500 px-6 py-3 text-sm font-semibold text-white transition-all hover:bg-amber-600 active:scale-95"
+                    >
                       <Play className="h-4 w-4 fill-white" />
                       {selectedLesson.completed ? t.trackPage.watchAgain : t.trackPage.startLesson}
                     </button>

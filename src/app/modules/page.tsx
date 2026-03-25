@@ -12,6 +12,8 @@ import Footer from "@/components/sections/footer";
 import { useLanguage } from "@/lib/language-context";
 import AuthGate from "@/components/auth-gate";
 
+export const dynamic = "force-dynamic";
+
 export default function ModulesPage() {
   const { t } = useLanguage();
 

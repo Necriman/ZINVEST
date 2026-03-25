@@ -4,12 +4,21 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import { ArrowLeft, Send, BrainCircuit, Loader2 } from "lucide-react";
+import { useRouter } from "next/navigation";
 
 import Navigation from "@/components/sections/navigation";
 import { useAuth } from "@/lib/auth-context";
 import RiskResultCard, { type RiskResult } from "@/components/RiskResult";
 
-type AnalysisType = "loan" | "purchase" | "invest";
+type AnalysisType =
+  | "loan"
+  | "installment"
+  | "purchase"
+  | "order"
+  | "invest"
+  | "longterm_invest";
+
+type RiskField = "amount" | "income" | "contract" | "relationship" | "deadline";
 
 type ChatMessage = {
   id: number;
@@ -20,15 +29,28 @@ type ChatMessage = {
 function analysisTitle(t: AnalysisType) {
   switch (t) {
     case "loan":
-      return "Give a loan";
+      return "💸 Займ";
+    case "installment":
+      return "🏦 Рассрочка";
     case "purchase":
-      return "Make a purchase";
+      return "🛒 Покупка";
+    case "order":
+      return "📦 Заказ/поставка";
     case "invest":
-      return "Invest";
+      return "📈 Инвестирование";
+    case "longterm_invest":
+      return "🧩 Долгосрочные вложения";
   }
 }
 
 export default function AnalyzePage() {
+  const router = useRouter();
+  const [redirecting] = useState(true);
+
+  useEffect(() => {
+    router.replace("/turbo-ai?mode=analyze");
+  }, [router]);
+
   const { user } = useAuth();
   const userId = user?.id ?? null;
 
@@ -38,6 +60,7 @@ export default function AnalyzePage() {
   const [isTyping, setIsTyping] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [result, setResult] = useState<RiskResult | null>(null);
+  const [riskField, setRiskField] = useState<RiskField | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
@@ -53,18 +76,33 @@ export default function AnalyzePage() {
       [
         {
           type: "loan" as const,
-          title: "💸 Give a loan",
-          description: "Assess how risky a borrower might be.",
+          title: "💸 Займ",
+          description: "Оцените, насколько рискован заемщик.",
+        },
+        {
+          type: "installment" as const,
+          title: "🏦 Рассрочка",
+          description: "Оценка риска при оплате в рассрочку.",
         },
         {
           type: "purchase" as const,
-          title: "🛒 Make a purchase",
-          description: "Score risk for delivery/payment timelines.",
+          title: "🛒 Покупка",
+          description: "Оценка риска для сроков доставки/оплаты.",
+        },
+        {
+          type: "order" as const,
+          title: "📦 Заказ/поставка",
+          description: "Оценка риска для условий заказа и поставки.",
         },
         {
           type: "invest" as const,
-          title: "📈 Invest",
-          description: "Evaluate risk factors behind the decision.",
+          title: "📈 Инвестирование",
+          description: "Оценка факторов риска за решением.",
+        },
+        {
+          type: "longterm_invest" as const,
+          title: "🧩 Долгосрочные вложения",
+          description: "Оцените риски на горизонте долгосрочного решения.",
         },
       ] as const,
     []
@@ -112,10 +150,23 @@ export default function AnalyzePage() {
           confidence: data.confidence,
           reasons: Array.isArray(data.reasons) ? data.reasons : [],
         });
+        setRiskField(null);
         return;
       }
 
-      const assistantText = data?.text || "Got it. Please answer the next question.";
+      const rawField = data?.missingField;
+      const nextField: RiskField | null =
+        typeof rawField === "string" &&
+        (rawField === "amount" ||
+          rawField === "income" ||
+          rawField === "contract" ||
+          rawField === "relationship" ||
+          rawField === "deadline")
+          ? (rawField as RiskField)
+          : null;
+      setRiskField(nextField);
+
+      const assistantText = data?.text || "Понял. Ответьте на следующий вопрос.";
       const assistantMessage: ChatMessage = {
         id: Date.now() + 1,
         role: "assistant",
@@ -124,7 +175,7 @@ export default function AnalyzePage() {
       setMessages((prev) => [...prev, assistantMessage]);
     } catch (err) {
       console.error("Analyze AI error:", err);
-      setErrorMsg("Something went wrong. Please try again.");
+      setErrorMsg("Что-то пошло не так. Попробуйте ещё раз.");
     } finally {
       setIsTyping(false);
     }
@@ -135,20 +186,21 @@ export default function AnalyzePage() {
     setMessages([]);
     setInput("");
     setResult(null);
+    setRiskField(null);
     setErrorMsg(null);
 
     const seed: ChatMessage = {
       id: Date.now(),
       role: "user",
-      content: `I selected: ${analysisTitle(t)}. Start AI risk scoring. Ask me the questions you need to collect structured inputs for an accurate risk score.`,
+      content: `Я выбрал: ${analysisTitle(t)}. Начинаем оценку риска. Задавай вопросы, чтобы собрать структурированные данные для точной оценки риска.`,
     };
     const next = [seed];
     setMessages(next);
     await requestAssistant(next, t);
   };
 
-  const handleSend = async () => {
-    const userText = input.trim();
+  const handleSend = async (textOverride?: string) => {
+    const userText = (textOverride ?? input).trim();
     if (!userText || isTyping || !analysisType) return;
     setInput("");
 
@@ -173,9 +225,21 @@ export default function AnalyzePage() {
     setAnalysisType(null);
     setMessages([]);
     setResult(null);
+    setRiskField(null);
     setInput("");
     setErrorMsg(null);
   };
+
+  if (redirecting) {
+    return (
+      <main className="min-h-screen bg-[#0a0f1c] flex flex-col">
+        <Navigation />
+        <div className="flex-1 flex items-center justify-center text-slate-300 px-4">
+          Перенаправляем в главное меню...
+        </div>
+      </main>
+    );
+  }
 
   return (
     <main className="min-h-screen bg-[#0a0f1c] flex flex-col">
@@ -193,16 +257,16 @@ export default function AnalyzePage() {
               className="inline-flex items-center gap-2 text-slate-400 hover:text-white transition-colors mb-4 text-sm"
             >
               <ArrowLeft className="h-4 w-4" />
-              Back to Home
+              На главную
             </Link>
             <div className="flex items-center gap-3">
               <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-500 to-blue-600">
                 <BrainCircuit className="h-6 w-6 text-white" />
               </div>
               <div>
-                <h1 className="text-2xl font-bold text-white">AI Risk Scoring</h1>
+                <h1 className="text-2xl font-bold text-white">Оценка риска</h1>
                 <p className="text-sm text-slate-400">
-                  Choose a scenario and answer a few questions.
+                  Выберите сценарий и ответьте на несколько вопросов.
                 </p>
               </div>
             </div>
@@ -234,7 +298,7 @@ export default function AnalyzePage() {
             <div className="flex-1 glass-card rounded-2xl flex flex-col overflow-hidden">
               <div className="px-4 md:px-6 py-4 border-b border-white/10 flex items-center justify-between gap-3 flex-wrap">
                 <div>
-                  <p className="text-xs text-slate-400">Scenario</p>
+                  <p className="text-xs text-slate-400">Сценарий</p>
                   <p className="text-white font-medium">{analysisTitle(analysisType)}</p>
                 </div>
                 <div className="flex gap-2">
@@ -242,7 +306,7 @@ export default function AnalyzePage() {
                     onClick={resetToMode}
                     className="rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-sm font-semibold text-white hover:bg-white/10 transition-colors"
                   >
-                    Restart
+                    Начать заново
                   </button>
                 </div>
               </div>
@@ -286,7 +350,7 @@ export default function AnalyzePage() {
                         >
                           <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-slate-200 flex items-center gap-2">
                             <Loader2 className="h-4 w-4 animate-spin text-blue-300" />
-                            Thinking...
+                            Идёт анализ...
                           </div>
                         </motion.div>
                       ) : null}
@@ -299,14 +363,155 @@ export default function AnalyzePage() {
 
               {!result ? (
                 <div className="px-4 md:px-6 pb-5 pt-4 border-t border-white/10">
+                  {riskField ? (
+                    <div className="mb-4 rounded-2xl border border-white/10 bg-white/5 px-4 py-3">
+                      <p className="text-xs text-slate-400 mb-2">
+                        Выберите ответ для текущего вопроса:
+                      </p>
+                      <div className="flex flex-wrap gap-2">
+                        {riskField === "relationship" ? (
+                          <>
+                            <button
+                              type="button"
+                              disabled={isTyping}
+                              onClick={() => void handleSend("известно")}
+                              className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm font-semibold text-white hover:bg-white/10 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                              🤝 Известно
+                            </button>
+                            <button
+                              type="button"
+                              disabled={isTyping}
+                              onClick={() => void handleSend("неизвестно")}
+                              className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm font-semibold text-white hover:bg-white/10 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                              🕵️ Неизвестно
+                            </button>
+                          </>
+                        ) : null}
+
+                        {riskField === "contract" ? (
+                          <>
+                            <button
+                              type="button"
+                              disabled={isTyping}
+                              onClick={() => void handleSend("да")}
+                              className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm font-semibold text-white hover:bg-white/10 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                              📝 Да
+                            </button>
+                            <button
+                              type="button"
+                              disabled={isTyping}
+                              onClick={() => void handleSend("нет")}
+                              className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm font-semibold text-white hover:bg-white/10 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                              ⛔ Нет
+                            </button>
+                          </>
+                        ) : null}
+
+                        {riskField === "amount" ? (
+                          <>
+                            <button
+                              type="button"
+                              disabled={isTyping}
+                              onClick={() => void handleSend("1000")}
+                              className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm font-semibold text-white hover:bg-white/10 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                              💰 1000
+                            </button>
+                            <button
+                              type="button"
+                              disabled={isTyping}
+                              onClick={() => void handleSend("5000")}
+                              className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm font-semibold text-white hover:bg-white/10 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                              💰 5000
+                            </button>
+                            <button
+                              type="button"
+                              disabled={isTyping}
+                              onClick={() => void handleSend("10000")}
+                              className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm font-semibold text-white hover:bg-white/10 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                              💰 10000
+                            </button>
+                          </>
+                        ) : null}
+
+                        {riskField === "income" ? (
+                          <>
+                            <button
+                              type="button"
+                              disabled={isTyping}
+                              onClick={() => void handleSend("2000")}
+                              className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm font-semibold text-white hover:bg-white/10 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                              👤 2000
+                            </button>
+                            <button
+                              type="button"
+                              disabled={isTyping}
+                              onClick={() => void handleSend("5000")}
+                              className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm font-semibold text-white hover:bg-white/10 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                              👤 5000
+                            </button>
+                            <button
+                              type="button"
+                              disabled={isTyping}
+                              onClick={() => void handleSend("10000")}
+                              className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm font-semibold text-white hover:bg-white/10 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                              👤 10000
+                            </button>
+                          </>
+                        ) : null}
+
+                        {riskField === "deadline" ? (
+                          <>
+                            <button
+                              type="button"
+                              disabled={isTyping}
+                              onClick={() => void handleSend("14")}
+                              className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm font-semibold text-white hover:bg-white/10 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                              ⏳ 14 дней
+                            </button>
+                            <button
+                              type="button"
+                              disabled={isTyping}
+                              onClick={() => void handleSend("30")}
+                              className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm font-semibold text-white hover:bg-white/10 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                              ⏳ 30 дней
+                            </button>
+                            <button
+                              type="button"
+                              disabled={isTyping}
+                              onClick={() => void handleSend("60")}
+                              className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm font-semibold text-white hover:bg-white/10 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                              ⏳ 60 дней
+                            </button>
+                          </>
+                        ) : null}
+                      </div>
+                      <p className="text-[11px] text-slate-500 mt-2 text-center">
+                        Если нет подходящего варианта — введите ответ вручную.
+                      </p>
+                    </div>
+                  ) : null}
+
                   <div className="flex gap-3 items-end">
                     <div className="flex-1">
-                      <label className="text-xs text-slate-400">Your answer</label>
+                      <label className="text-xs text-slate-400">Ваш ответ</label>
                       <input
                         value={input}
                         onChange={(e) => setInput(e.target.value)}
                         onKeyDown={handleKeyDown}
-                        placeholder="e.g. I earn $2,000/month, deadline is 45 days, I have a contract..."
+                        placeholder="Например: я зарабатываю 2000 в месяц, срок 45 дней, есть договор... (или ответьте да/нет, известно/неизвестно)"
                         className="mt-2 w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white placeholder:text-slate-500 outline-none focus:border-blue-500/40"
                         disabled={isTyping}
                       />
@@ -318,12 +523,12 @@ export default function AnalyzePage() {
                     >
                       <span className="inline-flex items-center gap-2">
                         <Send className="h-4 w-4" />
-                        Send
+                        Отправить
                       </span>
                     </button>
                   </div>
                   <p className="text-xs text-slate-500 mt-3">
-                    Tip: you can answer short facts; the AI will extract structured data.
+                    Подсказка: можно отвечать короткими фактами — AI извлечет структурированные данные.
                   </p>
                 </div>
               ) : null}
