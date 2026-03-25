@@ -83,6 +83,48 @@ Rules:
 - Do not guess ambiguous values; ask follow-ups instead.
 `;
 
+function tryParseJsonFromText(raw: string): any | null {
+  const text = raw.trim();
+
+  // 1) Direct parse
+  try {
+    return JSON.parse(text);
+  } catch {
+    // ignore
+  }
+
+  // 2) Strip common markdown wrappers / prefixes.
+  // Examples:
+  // - json { ... }
+  // - ```json { ... } ```
+  const stripped = text
+    .replace(/^json\s*/i, "")
+    .replace(/^```json\s*/i, "")
+    .replace(/^```/i, "")
+    .replace(/```$/i, "")
+    .trim();
+
+  try {
+    return JSON.parse(stripped);
+  } catch {
+    // ignore
+  }
+
+  // 3) Extract first {...} block if model included extra text.
+  const first = text.indexOf("{");
+  const last = text.lastIndexOf("}");
+  if (first >= 0 && last > first) {
+    const candidate = text.slice(first, last + 1);
+    try {
+      return JSON.parse(candidate);
+    } catch {
+      // ignore
+    }
+  }
+
+  return null;
+}
+
 function normalizeRiskInput(raw: any): RiskInputData | null {
   const amount = Number(raw?.amount);
   const income = Number(raw?.income);
@@ -188,7 +230,7 @@ export async function POST(req: NextRequest) {
     // Analyze flow: we expect strict JSON from the model.
     let parsed: any = null;
     try {
-      parsed = text ? JSON.parse(text) : null;
+      parsed = text ? tryParseJsonFromText(text) : null;
     } catch {
       // If the model didn't follow JSON-only instructions, fallback to plain text.
       return NextResponse.json({ text });
