@@ -1,11 +1,16 @@
 import type { Language } from "@/lib/translations";
 import type { AnalyzeAnswers, RiskScoringResult, AnalysisType } from "./scoring";
+import type { SimulationResult } from "./simulation";
 
 export type RiskAIOutput = {
+  dealRisk: number;
+  userRisk: number;
+  aiScore: number;
+  verdict: "SAFE" | "CAUTION" | "HIGH RISK";
+  confidence: number;
+  reasons: string[];
   explanation: string;
-  keyRisks: string[];
   recommendations: string[];
-  socialProof: string;
 };
 
 function clamp(n: number, min: number, max: number) {
@@ -37,12 +42,13 @@ type GenerateRiskAIExplanationParams = {
   analysisType: AnalysisType;
   answers: AnalyzeAnswers;
   scoring: RiskScoringResult;
+  simulation?: SimulationResult | null;
 };
 
 export async function generateRiskAIExplanation(
   params: GenerateRiskAIExplanationParams
 ): Promise<RiskAIOutput | null> {
-  const { language, analysisType, answers, scoring } = params;
+  const { language, analysisType, answers, scoring, simulation } = params;
 
   const openaiKey = process.env.OPENAI_API_KEY?.trim();
   const openaiBaseUrl = process.env.OPENAI_API_BASE_URL?.trim() || "https://api.openai.com";
@@ -52,52 +58,73 @@ export async function generateRiskAIExplanation(
   const anthropicModel = process.env.ANTHROPIC_RISK_MODEL?.trim() || "claude-sonnet-4-5";
 
   const deterministicPayload = {
+    scenario: analysisType === "loan" ? "lend" : analysisType,
     overallRisk: scoring.score,
     dealRisk: scoring.dealRiskScore,
     userRisk: scoring.userCapacityScore,
     verdict: scoring.verdict,
     confidence: scoring.confidence,
-    keyRisks: scoring.keyRisks,
-    reasons: scoring.reasons,
+    interactionBonus: scoring.interactionBonus,
+    reasons: scoring.keyRisks.length ? scoring.keyRisks : scoring.reasons,
     recommendations: scoring.recommendations,
-    socialProof: scoring.socialProof,
+    explanation: scoring.explanation,
+    simulation,
   };
 
-  const aiSystemPrompt = `You are a financial risk analyst for Zinvest.
-You generate a human-like, bank-style explanation based on structured answers and computed scores.
+  const aiSystemPrompt = `You are an AI financial risk analyst inside the ZINVEST system.
+Analyze real user financial situations critically like a bank risk analyst.
 
 Rules:
-- Output ONLY valid JSON. No markdown. No extra text.
-- Use the user's language exactly.
-- Be educational and neutral. Do not give personalized investment advice.
-- Provide clear plain-language reasoning and actionable risk mitigations.
+- Output ONLY valid JSON (no markdown, no comments, no extra text).
+- Be realistic and decision-focused.
+- Consider combined risks (interaction effects).
+- Multiple risks should increase severity nonlinearly.
+- Use clear practical language.
+- Do not provide personalized investment advice.
 
-Return JSON with this shape:
+STRICT OUTPUT SCHEMA:
 {
-  "explanation": "string",
-  "keyRisks": ["string", "..."],
-  "recommendations": ["string", "..."],
-  "socialProof": "string"
-}
-`;
+  "dealRisk": number,
+  "userRisk": number,
+  "aiScore": number,
+  "verdict": "SAFE" | "CAUTION" | "HIGH RISK",
+  "confidence": number,
+  "reasons": ["string", "string"],
+  "explanation": "detailed explanation",
+  "recommendations": ["string", "string"]
+}`;
 
   const aiUserPrompt = `Language: ${language}
-Scenario type: ${analysisType}
+Input JSON:
+{
+  "scenario": "${analysisType === "loan" ? "lend" : analysisType}",
+  "amount": ${Number(answers.amount ?? 0)},
+  "income": ${Number(answers.income ?? 0)},
+  "contract": ${Boolean(answers.contract)},
+  "relationship": "${answers.relationship ?? "known"}",
+  "deadline_days": ${Number(answers.deadline ?? 0)}
+}
 
-User answers (structured):
+Extended structured answers:
 ${JSON.stringify(answers)}
 
-Computed deterministic risk payload:
+Deterministic baseline (keep numbers close and consistent):
 ${JSON.stringify(deterministicPayload)}
 
-Now generate:
-1) explanation: 2-4 short paragraphs, human-like, includes why the risk is elevated.
-2) keyRisks: top 3-5 risk drivers, each as a single sentence.
-3) recommendations: 3-6 mitigation steps, each as a single sentence.
-4) socialProof: simulated statement based on similar cases, include a percentage and what it means.
-
-Keep numbers consistent with the computed payload if you mention them.
+Return strict JSON schema exactly.
+Consider worst-case scenarios and combined risks.
 `;
+
+  const normalizeVerdict = (v: unknown): "SAFE" | "CAUTION" | "HIGH RISK" => {
+    const text = String(v ?? "").toUpperCase().trim();
+    if (text.includes("HIGH")) return "HIGH RISK";
+    if (text.includes("CAUTION")) return "CAUTION";
+    if (text.includes("SAFE")) return "SAFE";
+    // fallback from numeric baseline
+    if (scoring.score > 70) return "HIGH RISK";
+    if (scoring.score > 45) return "CAUTION";
+    return "SAFE";
+  };
 
   const timeoutMs = (() => {
     const raw = process.env.AI_RISK_TIMEOUT_MS;
@@ -142,16 +169,31 @@ Keep numbers consistent with the computed payload if you mention them.
         if (!parsed) return null;
 
         const out: RiskAIOutput = {
+          dealRisk: clamp(Number(parsed.dealRisk ?? scoring.dealRiskScore), 0, 100),
+          userRisk: clamp(Number(parsed.userRisk ?? scoring.userCapacityScore), 0, 100),
+          aiScore: clamp(
+            Number(
+              parsed.aiScore ??
+                Math.round((Number(parsed.dealRisk ?? scoring.dealRiskScore) * 0.6) + (Number(parsed.userRisk ?? scoring.userCapacityScore) * 0.4))
+            ),
+            0,
+            100
+          ),
+          verdict: normalizeVerdict(parsed.verdict),
+          confidence: clamp(Number(parsed.confidence ?? scoring.confidence), 0, 100),
+          reasons: Array.isArray(parsed.reasons)
+            ? parsed.reasons.map(String).slice(0, 8)
+            : scoring.keyRisks.slice(0, 8),
           explanation: String(parsed.explanation ?? ""),
-          keyRisks: Array.isArray(parsed.keyRisks) ? parsed.keyRisks.map(String) : [],
           recommendations: Array.isArray(parsed.recommendations)
             ? parsed.recommendations.map(String)
             : [],
-          socialProof: String(parsed.socialProof ?? ""),
         };
         if (!out.explanation) return null;
         // Small clamp to avoid runaway lengths (no hard limit needed, but keep safe).
         out.explanation = out.explanation.slice(0, 6000);
+        if (!out.recommendations.length) out.recommendations = scoring.recommendations.slice(0, 6);
+        if (!out.reasons.length) out.reasons = scoring.keyRisks.slice(0, 8);
         return out;
       } finally {
         clearTimeout(timer);
@@ -189,15 +231,30 @@ Keep numbers consistent with the computed payload if you mention them.
         if (!parsed) return null;
 
         const out: RiskAIOutput = {
+          dealRisk: clamp(Number(parsed.dealRisk ?? scoring.dealRiskScore), 0, 100),
+          userRisk: clamp(Number(parsed.userRisk ?? scoring.userCapacityScore), 0, 100),
+          aiScore: clamp(
+            Number(
+              parsed.aiScore ??
+                Math.round((Number(parsed.dealRisk ?? scoring.dealRiskScore) * 0.6) + (Number(parsed.userRisk ?? scoring.userCapacityScore) * 0.4))
+            ),
+            0,
+            100
+          ),
+          verdict: normalizeVerdict(parsed.verdict),
+          confidence: clamp(Number(parsed.confidence ?? scoring.confidence), 0, 100),
+          reasons: Array.isArray(parsed.reasons)
+            ? parsed.reasons.map(String).slice(0, 8)
+            : scoring.keyRisks.slice(0, 8),
           explanation: String(parsed.explanation ?? ""),
-          keyRisks: Array.isArray(parsed.keyRisks) ? parsed.keyRisks.map(String) : [],
           recommendations: Array.isArray(parsed.recommendations)
             ? parsed.recommendations.map(String)
             : [],
-          socialProof: String(parsed.socialProof ?? ""),
         };
         if (!out.explanation) return null;
         out.explanation = out.explanation.slice(0, 6000);
+        if (!out.recommendations.length) out.recommendations = scoring.recommendations.slice(0, 6);
+        if (!out.reasons.length) out.reasons = scoring.keyRisks.slice(0, 8);
         return out;
       } finally {
         clearTimeout(timer);

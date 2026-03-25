@@ -23,6 +23,8 @@ export type AnalyzeAnswers = RiskInputData & {
   contract_reason?: "verbal" | "missing_terms" | "not_sure";
   identity_verified?: "verified" | "partial" | "not_verified";
   past_defaults?: "never" | "once" | "many";
+  stable_income_proof?: "verified" | "partial" | "none";
+  documentation_completeness?: "complete" | "partial" | "none";
   transparency?: "high" | "medium" | "low";
   urgency?: "low" | "medium" | "high";
 
@@ -55,6 +57,7 @@ export type RiskScoringResult = {
   // Split scores (0..100)
   dealRiskScore: number;
   userCapacityScore: number;
+  interactionBonus: number;
 
   // AI-ready explanation fields (also returned for deterministic fallback).
   keyRisks: string[];
@@ -238,6 +241,50 @@ export function calculateRisk(
   }
 
   {
+    const sip = answers.stable_income_proof ?? "partial";
+    const proofRisk = scoreChoice({ verified: 0, partial: 35, none: 72 }, sip, 40);
+    dealFactors.push({
+      id: "stable_income_proof",
+      weight: 0.1,
+      riskValue: proofRisk,
+      whyBad: t(
+        language,
+        "Нет подтверждения стабильного дохода контрагента — выше риск кассового разрыва и невозврата.",
+        "No proof of stable income increases cashflow and repayment risk.",
+        "Barqaror daromad isboti yo'qligi pul oqimi va qaytarmaslik riskini oshiradi."
+      ),
+      whyGood: t(
+        language,
+        "Подтвержденный стабильный доход делает прогноз платежной дисциплины надежнее.",
+        "Verified stable income makes repayment reliability more predictable.",
+        "Tasdiqlangan barqaror daromad to'lov intizomini bashorat qilishni yaxshilaydi."
+      ),
+    });
+  }
+
+  {
+    const dc = answers.documentation_completeness ?? "partial";
+    const docsRisk = scoreChoice({ complete: 0, partial: 35, none: 80 }, dc, 45);
+    dealFactors.push({
+      id: "documentation_completeness",
+      weight: 0.08,
+      riskValue: docsRisk,
+      whyBad: t(
+        language,
+        "Неполные документы затрудняют юридическую защиту и верификацию условий.",
+        "Incomplete documentation weakens legal protection and term verification.",
+        "To'liq bo'lmagan hujjatlar huquqiy himoya va shartlarni tekshirishni zaiflashtiradi."
+      ),
+      whyGood: t(
+        language,
+        "Полный пакет документов снижает риск скрытых условий и споров.",
+        "Complete documentation lowers hidden-term and dispute risk.",
+        "To'liq hujjatlar paketi yashirin shartlar va nizolar riskini kamaytiradi."
+      ),
+    });
+  }
+
+  {
     const tr = answers.transparency ?? "medium";
     const transparencyRisk = scoreChoice({ high: 0, medium: 25, low: 60 }, tr, 40);
     dealFactors.push({
@@ -405,6 +452,18 @@ export function calculateRisk(
     answers.past_defaults === "many"
   );
   pushDealFlag(
+    "income_proof_weak",
+    28,
+    t(language, "Красный флаг: нет подтверждения стабильного дохода.", "Red flag: no stable income proof.", "Qizil bayroq: barqaror daromad isboti yo'q."),
+    answers.stable_income_proof === "none" || answers.stable_income_proof === "partial"
+  );
+  pushDealFlag(
+    "docs_incomplete",
+    32,
+    t(language, "Красный флаг: неполный пакет документов.", "Red flag: incomplete documentation.", "Qizil bayroq: hujjatlar to'liq emas."),
+    answers.documentation_completeness === "none" || answers.documentation_completeness === "partial"
+  );
+  pushDealFlag(
     "low_transparency",
     25,
     t(language, "Красный флаг: низкая прозрачность документов и условий.", "Red flag: low transparency.", "Qizil bayroq: shaffoflik past."),
@@ -451,13 +510,24 @@ export function calculateRisk(
   }
 
   const dealRedSum = redFlags.reduce((s, f) => s + f.severity, 0);
+  // Interaction penalties: combined factors are riskier than separate factors.
+  const interactionPenalty =
+    (!answers.contract && answers.relationship === "unknown" ? 40 : 0) +
+    (answers.urgency === "high" && answers.documentation_completeness === "none" ? 30 : 0) +
+    (answers.guaranteed_return === true && answers.relationship === "unknown" ? 50 : 0);
   if (dealRedSum > 0) {
     const redCount = redFlags.length;
     const amplification =
       1 +
       Math.min(0.9, dealRedSum / 180) +
       Math.min(0.4, (redCount - 1) * 0.12);
-    dealRiskScore = clamp(Math.round(dealRiskScore + dealRedSum * amplification), 0, 100);
+    dealRiskScore = clamp(
+      Math.round(dealRiskScore + dealRedSum * amplification + interactionPenalty),
+      0,
+      100
+    );
+  } else if (interactionPenalty > 0) {
+    dealRiskScore = clamp(dealRiskScore + interactionPenalty, 0, 100);
   }
 
   // -----------------------
@@ -804,6 +874,7 @@ export function calculateRisk(
     reasons: limitedReasons,
     dealRiskScore,
     userCapacityScore,
+    interactionBonus: interactionPenalty,
     keyRisks: enrichedKeyRisks.slice(0, 8),
     explanation,
     recommendations: recommendations.slice(0, 6),

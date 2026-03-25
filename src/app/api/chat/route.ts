@@ -3,7 +3,9 @@ import { getSupabase } from "@/lib/supabase";
 import { calculateRisk } from "../../../lib/scoring";
 import type { RiskInputData, AnalyzeAnswers } from "../../../lib/scoring";
 import { generateRiskAIExplanation } from "@/lib/ai";
+import { generateFollowUpQuestions } from "@/lib/aiQuestions";
 import { questions } from "@/lib/questions";
+import { simulateScenarios } from "@/lib/simulation";
 import type { Language } from "@/lib/translations";
 
 type ChatMode = "finance" | "general" | "analyze";
@@ -936,6 +938,8 @@ export async function POST(req: NextRequest) {
         | "relationship"
         | "identity_verified"
         | "past_defaults"
+        | "stable_income_proof"
+        | "documentation_completeness"
         | "transparency"
         | "urgency"
         | "collateral_provided"
@@ -1039,9 +1043,33 @@ export async function POST(req: NextRequest) {
         }
 
         if (fieldId === "past_defaults") {
+          const n = parseFirstNumber(v);
+          if (n !== null) {
+            if (n <= 0) return "never";
+            if (n <= 1) return "once";
+            return "many";
+          }
           if (v.includes("никог") || v.includes("never")) return "never";
           if (v.includes("один") || v.includes("once") || v.includes("1")) return "once";
           if (v.includes("мног") || v.includes("часто") || v.includes("many") || v.includes("было")) return "many";
+          return null;
+        }
+
+        if (fieldId === "stable_income_proof") {
+          if (v.includes("подтвер") || v.includes("verified") || v.includes("tasdiq")) return "verified";
+          if (v.includes("частич") || v.includes("partial") || v.includes("qisman")) return "partial";
+          if (v === "yes" || v === "да" || v === "ha" || v === "true" || v === "1") return "verified";
+          if (v.includes("нет") || v.includes("none") || v.includes("yo'q") || v.includes("нет подтверж")) return "none";
+          if (v === "no" || v === "yoq" || v === "false" || v === "0") return "none";
+          return null;
+        }
+
+        if (fieldId === "documentation_completeness") {
+          if (v.includes("пол") || v.includes("complete") || v.includes("to'liq")) return "complete";
+          if (v.includes("частич") || v.includes("partial") || v.includes("qisman")) return "partial";
+          if (v === "yes" || v === "да" || v === "ha" || v === "true" || v === "1") return "complete";
+          if (v.includes("нет") || v.includes("none") || v.includes("yo'q")) return "none";
+          if (v === "no" || v === "yoq" || v === "false" || v === "0") return "none";
           return null;
         }
 
@@ -1077,13 +1105,103 @@ export async function POST(req: NextRequest) {
       };
 
       // Use the existing parseRelationship(raw) helper defined above (outside this block).
+      const parseRelationshipFlexible = (
+        raw: string
+      ): RiskInputData["relationship"] | null => {
+        const direct = parseRelationship(raw);
+        if (direct) return direct;
+        // User may answer with number of prior interactions: 0 => unknown, >0 => known.
+        const n = parseFirstNumber(raw);
+        if (n !== null) {
+          return n > 0 ? "known" : "unknown";
+        }
+        return null;
+      };
+
+      const canonicalValues: Record<AnalyzeMissingField, string[]> = {
+        contract: ["true", "false"],
+        contract_reason: ["verbal", "missing_terms", "not_sure"],
+        relationship: ["known", "unknown"],
+        identity_verified: ["verified", "partial", "not_verified"],
+        past_defaults: ["never", "once", "many"],
+        stable_income_proof: ["verified", "partial", "none"],
+        documentation_completeness: ["complete", "partial", "none"],
+        transparency: ["high", "medium", "low"],
+        urgency: ["low", "medium", "high"],
+        collateral_provided: ["true", "false"],
+        penalty_terms_present: ["true", "false"],
+        delivery_reliability: ["reliable", "uncertain", "unknown"],
+        guaranteed_return: ["true", "false"],
+        amount: ["number"],
+        income: ["number"],
+        repayment_plan: ["conservative", "moderate", "aggressive"],
+        savings: ["number"],
+        deadline: ["number"],
+      };
+
+      const parseAnalyzeValueWithAI = async (
+        fieldId: AnalyzeMissingField,
+        raw: string
+      ): Promise<AnalyzeValue | null> => {
+        const apiKey = process.env.ANTHROPIC_API_KEY?.trim();
+        if (!apiKey) return null;
+
+        const model = process.env.ANTHROPIC_RISK_MODEL?.trim() || "claude-sonnet-4-5";
+        const allowed = canonicalValues[fieldId] ?? [];
+        const system = `You normalize a user's free-text answer for a fintech risk form.
+Return ONLY JSON: {"value": <canonical value or null>}.
+No markdown, no extra text.
+Allowed canonical values for this field: ${JSON.stringify(allowed)}.
+If value cannot be confidently normalized, return null.`;
+
+        const user = `Language: ${resolvedLanguage}
+Field: ${fieldId}
+Raw user answer: ${raw}`;
+
+        try {
+          const response = await fetch("https://api.anthropic.com/v1/messages", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "x-api-key": apiKey,
+              "anthropic-version": "2023-06-01",
+            },
+            body: JSON.stringify({
+              model,
+              max_tokens: 120,
+              temperature: 0,
+              system,
+              messages: [{ role: "user", content: user }],
+            }),
+          });
+          if (!response.ok) return null;
+          const data = await response.json();
+          const text = data.content?.map((b: { text?: string }) => b.text || "").join("") || "";
+          const parsed = tryParseJsonFromText(text);
+          const value = parsed?.value;
+          if (value === null || value === undefined) return null;
+
+          if (fieldId === "amount" || fieldId === "income" || fieldId === "deadline" || fieldId === "savings") {
+            const n = Number(value);
+            return Number.isFinite(n) ? n : null;
+          }
+          if (fieldId === "contract" || fieldId === "collateral_provided" || fieldId === "penalty_terms_present" || fieldId === "guaranteed_return") {
+            if (value === true || value === "true") return true;
+            if (value === false || value === "false") return false;
+            return null;
+          }
+          return typeof value === "string" ? value : null;
+        } catch {
+          return null;
+        }
+      };
 
       const parseAnalyzeValueForField = (fieldId: AnalyzeMissingField, raw: string): AnalyzeValue | null => {
         if (fieldId === "contract") return parseBoolean(raw);
         if (fieldId === "collateral_provided") return parseBoolean(raw);
         if (fieldId === "penalty_terms_present") return parseBoolean(raw);
         if (fieldId === "guaranteed_return") return parseBoolean(raw);
-        if (fieldId === "relationship") return parseRelationship(raw);
+        if (fieldId === "relationship") return parseRelationshipFlexible(raw);
         if (fieldId === "amount" || fieldId === "income" || fieldId === "deadline" || fieldId === "savings") {
           const n = parseFirstNumber(raw);
           return n === null ? null : n;
@@ -1109,6 +1227,10 @@ export async function POST(req: NextRequest) {
               return en("Have you verified their identity/registration data? Reply: verified / partial / not verified.");
             case "past_defaults":
               return en("Have they ever been late with payments or failed to repay? Reply: never / once / many.");
+            case "stable_income_proof":
+              return en("Do they have verifiable and stable income proof? Reply: verified / partial / none.");
+            case "documentation_completeness":
+              return en("How complete are supporting documents? Reply: complete / partial / none.");
             case "transparency":
               return en("How transparent are the documents and deal terms? Reply: high / medium / low.");
             case "urgency":
@@ -1146,6 +1268,10 @@ export async function POST(req: NextRequest) {
               return uz("Shaxs/ro'yxat ma'lumotlarini tekshirganmisiz? Javob: tasdiqlangan / qisman / tasdiqlanmagan.");
             case "past_defaults":
               return uz("Ular to'lovni kechiktirganmi yoki qaytarmaganmi? Javob: hech qachon / bir marta / ko'p marotaba.");
+            case "stable_income_proof":
+              return uz("Ularda tasdiqlangan va barqaror daromad isboti bormi? Javob: tasdiqlangan / qisman / yo'q.");
+            case "documentation_completeness":
+              return uz("Qo'llab-quvvatlovchi hujjatlar qay darajada to'liq? Javob: to'liq / qisman / yo'q.");
             case "transparency":
               return uz("Hujjatlar va shartlar qanchalik shaffof? Javob: yuqori / o'rtacha / past.");
             case "urgency":
@@ -1183,6 +1309,10 @@ export async function POST(req: NextRequest) {
             return ru("Проверяли ли вы личность/регистрационные данные контрагента? Выберите: подтверждено / частично / не подтверждено.");
           case "past_defaults":
             return ru("Были ли случаи просрочек/неплатежей? Выберите: никогда / один раз / многократно.");
+          case "stable_income_proof":
+            return ru("Есть ли подтверждение стабильного дохода контрагента? Выберите: подтверждено / частично / нет.");
+          case "documentation_completeness":
+            return ru("Насколько полный пакет документов по сделке? Выберите: полный / частичный / отсутствует.");
           case "transparency":
             return ru("Насколько прозрачно предоставляются документы и условия? Выберите: высокая / средняя / низкая прозрачность.");
           case "urgency":
@@ -1244,6 +1374,16 @@ export async function POST(req: NextRequest) {
           id: "past_defaults",
           when: () => true,
           parse: (raw) => parseAnalyzeValueForField("past_defaults", raw),
+        },
+        stable_income_proof: {
+          id: "stable_income_proof",
+          when: () => true,
+          parse: (raw) => parseAnalyzeValueForField("stable_income_proof", raw),
+        },
+        documentation_completeness: {
+          id: "documentation_completeness",
+          when: () => true,
+          parse: (raw) => parseAnalyzeValueForField("documentation_completeness", raw),
         },
         transparency: {
           id: "transparency",
@@ -1327,18 +1467,71 @@ export async function POST(req: NextRequest) {
       let userIndex = 0;
       // Walk through the chat like a deterministic state machine.
       while (true) {
-        const nextStep = allSteps.find((s) => s.when(answers) && (answers[s.id] === undefined || answers[s.id] === null));
+        const aiFollowUps = await generateFollowUpQuestions(
+          answers as Partial<AnalyzeAnswers>,
+          scenario,
+          resolvedLanguage
+        );
+
+        const prioritizedFollowUp = aiFollowUps
+          .map((q) => stepById[q.id as AnalyzeMissingField] ?? null)
+          .find(
+            (s): s is Step => {
+              if (!s) return false;
+              return (
+                s.when(answers) &&
+                (answers[s.id] === undefined || answers[s.id] === null)
+              );
+            }
+          );
+
+        const nextStep =
+          prioritizedFollowUp ??
+          allSteps.find(
+            (s) =>
+              s.when(answers) &&
+              (answers[s.id] === undefined || answers[s.id] === null)
+          );
         if (!nextStep) {
           // All required answers are present
+          const amountNum = Number(answers.amount);
+          const incomeNum = Number(answers.income);
+          const deadlineNum = Number(answers.deadline);
+          const relationshipSafe = answers.relationship === "unknown" ? "unknown" : "known";
+
+          if (
+            !Number.isFinite(amountNum) ||
+            amountNum < 0 ||
+            !Number.isFinite(incomeNum) ||
+            incomeNum < 0 ||
+            !Number.isFinite(deadlineNum) ||
+            deadlineNum < 0
+          ) {
+            const fallbackQuestion =
+              !Number.isFinite(amountNum) || amountNum < 0
+                ? "amount"
+                : !Number.isFinite(incomeNum) || incomeNum < 0
+                  ? "income"
+                  : "deadline";
+            const text = buildQuestionText(fallbackQuestion);
+            const progress = Math.round((answeredCount() / totalSteps) * 100);
+            return NextResponse.json({ text, missingField: fallbackQuestion, progress });
+          }
+
           const inputData: RiskInputData = {
-            amount: Number(answers.amount),
-            income: Number(answers.income),
+            amount: amountNum,
+            income: incomeNum,
             contract: Boolean(answers.contract),
-            relationship: (answers.relationship as any) ?? "known",
-            deadline: Number(answers.deadline),
+            relationship: relationshipSafe,
+            deadline: deadlineNum,
           };
 
           const scoring = calculateRisk(answers as AnalyzeAnswers, scenario, resolvedLanguage);
+          const simulation = simulateScenarios(
+            answers as AnalyzeAnswers,
+            scenario,
+            resolvedLanguage
+          );
           // "AI thinking" delay for better UX (typing animation is already active client-side).
           await sleep(650);
 
@@ -1347,26 +1540,64 @@ export async function POST(req: NextRequest) {
             analysisType: scenario,
             answers: answers as AnalyzeAnswers,
             scoring,
+            simulation,
           });
 
           await sleep(350);
 
+          const baseScore = Math.max(
+            0,
+            Math.min(100, Number(scoring.score) || 0)
+          );
+          const aiScore = Math.max(
+            0,
+            Math.min(
+              100,
+              Number(
+                aiOut?.aiScore ??
+                  Math.round(
+                    (Number(aiOut?.dealRisk ?? scoring.dealRiskScore) * 0.6) +
+                      (Number(aiOut?.userRisk ?? scoring.userCapacityScore) * 0.4)
+                  )
+              ) || 0
+            )
+          );
+          const finalRisk = Math.max(
+            0,
+            Math.min(
+              100,
+              Math.round(baseScore * 0.6 + aiScore * 0.4 + scoring.interactionBonus)
+            )
+          );
+
           const out = {
             // Existing fields required by UI/dashboard
-            risk: scoring.score,
+            risk: finalRisk,
             verdict: scoring.verdict,
-            confidence: scoring.confidence,
+            confidence: Math.max(0, Math.min(100, Number(scoring.confidence) || 0)),
             reasons: scoring.reasons,
             language: resolvedLanguage,
 
             // Upgraded result engine output
-            dealRisk: scoring.dealRiskScore,
-            userRisk: scoring.userCapacityScore,
-            verdictDetail: scoring.verdictDetail,
-            keyRisks: aiOut?.keyRisks?.length ? aiOut.keyRisks : scoring.keyRisks,
+            dealRisk: aiOut ? aiOut.dealRisk : scoring.dealRiskScore,
+            userRisk: aiOut ? aiOut.userRisk : scoring.userCapacityScore,
+            verdictDetail: aiOut?.verdict || scoring.verdictDetail,
+            keyRisks: aiOut?.reasons?.length ? aiOut.reasons : scoring.keyRisks,
             explanation: aiOut?.explanation || scoring.explanation,
             recommendations: aiOut?.recommendations?.length ? aiOut.recommendations : scoring.recommendations,
-            socialProof: aiOut?.socialProof || scoring.socialProof,
+            socialProof: scoring.socialProof,
+            worstCaseRisk: simulation.worstCaseRisk,
+            scenarios: simulation.scenarios,
+
+            baseRisk: baseScore,
+            aiRisk: aiScore,
+            finalRisk,
+            interactionBonus: scoring.interactionBonus,
+            analysisStages: [
+              "Analyzing risk patterns...",
+              "Checking financial stability...",
+              "Simulating worst-case scenarios...",
+            ],
 
             // Back-compat split scores
             dealRiskScore: scoring.dealRiskScore,
@@ -1401,7 +1632,11 @@ export async function POST(req: NextRequest) {
         }
 
         const rawAnswer = userMessages[userIndex]?.content ?? "";
-        const parsed = nextStep.parse(rawAnswer);
+        let parsed = nextStep.parse(rawAnswer);
+        if (parsed === null || parsed === undefined) {
+          // Fallback: normalize free-text answer with Claude so user can answer in own style.
+          parsed = await parseAnalyzeValueWithAI(nextStep.id, rawAnswer);
+        }
         if (parsed === null || parsed === undefined) {
           // Ask the same question again (user entered invalid format)
           const text = buildQuestionText(nextStep.id);

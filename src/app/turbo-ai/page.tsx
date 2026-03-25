@@ -38,6 +38,8 @@ type RiskField =
   | "contract_reason"
   | "identity_verified"
   | "past_defaults"
+  | "stable_income_proof"
+  | "documentation_completeness"
   | "transparency"
   | "urgency"
   | "collateral_provided"
@@ -149,6 +151,18 @@ export default function TurboAIPage() {
       language === "en" ? "Once" : language === "uz" ? "Bir marta" : "Один раз",
     pastMany:
       language === "en" ? "Multiple times" : language === "uz" ? "Ko'p marta" : "Были многократно",
+    stableIncomeVerified:
+      language === "en" ? "Verified" : language === "uz" ? "Tasdiqlangan" : "Подтверждено",
+    stableIncomePartial:
+      language === "en" ? "Partial" : language === "uz" ? "Qisman" : "Частично",
+    stableIncomeNone:
+      language === "en" ? "None" : language === "uz" ? "Yo'q" : "Нет",
+    docsComplete:
+      language === "en" ? "Complete" : language === "uz" ? "To'liq" : "Полный",
+    docsPartial:
+      language === "en" ? "Partial" : language === "uz" ? "Qisman" : "Частичный",
+    docsNone:
+      language === "en" ? "None" : language === "uz" ? "Yo'q" : "Нет",
     transparencyHigh:
       language === "en" ? "High" : language === "uz" ? "Yuqori" : "Высокая",
     transparencyMedium:
@@ -299,6 +313,8 @@ export default function TurboAIPage() {
             rawField === "contract_reason" ||
             rawField === "identity_verified" ||
             rawField === "past_defaults" ||
+            rawField === "stable_income_proof" ||
+            rawField === "documentation_completeness" ||
             rawField === "transparency" ||
             rawField === "urgency" ||
             rawField === "collateral_provided" ||
@@ -500,6 +516,8 @@ export default function TurboAIPage() {
                                 rawField === "contract_reason" ||
                                 rawField === "identity_verified" ||
                                 rawField === "past_defaults" ||
+                                rawField === "stable_income_proof" ||
+                                rawField === "documentation_completeness" ||
                                 rawField === "transparency" ||
                                 rawField === "urgency" ||
                                 rawField === "collateral_provided" ||
@@ -685,6 +703,8 @@ export default function TurboAIPage() {
                                     rawField === "contract_reason" ||
                                     rawField === "identity_verified" ||
                                     rawField === "past_defaults" ||
+                                    rawField === "stable_income_proof" ||
+                                    rawField === "documentation_completeness" ||
                                     rawField === "transparency" ||
                                     rawField === "urgency" ||
                                     rawField === "collateral_provided" ||
@@ -946,6 +966,64 @@ export default function TurboAIPage() {
                           className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm font-semibold text-white hover:bg-white/10 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                           🚨 {analyzeLabels.pastMany}
+                        </button>
+                      </>
+                    ) : null}
+
+                    {riskField === "stable_income_proof" ? (
+                      <>
+                        <button
+                          type="button"
+                          disabled={isTyping}
+                          onClick={() => handleSend("verified")}
+                          className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm font-semibold text-white hover:bg-white/10 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          ✅ {analyzeLabels.stableIncomeVerified}
+                        </button>
+                        <button
+                          type="button"
+                          disabled={isTyping}
+                          onClick={() => handleSend("partial")}
+                          className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm font-semibold text-white hover:bg-white/10 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          🟨 {analyzeLabels.stableIncomePartial}
+                        </button>
+                        <button
+                          type="button"
+                          disabled={isTyping}
+                          onClick={() => handleSend("none")}
+                          className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm font-semibold text-white hover:bg-white/10 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          ❌ {analyzeLabels.stableIncomeNone}
+                        </button>
+                      </>
+                    ) : null}
+
+                    {riskField === "documentation_completeness" ? (
+                      <>
+                        <button
+                          type="button"
+                          disabled={isTyping}
+                          onClick={() => handleSend("complete")}
+                          className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm font-semibold text-white hover:bg-white/10 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          📚 {analyzeLabels.docsComplete}
+                        </button>
+                        <button
+                          type="button"
+                          disabled={isTyping}
+                          onClick={() => handleSend("partial")}
+                          className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm font-semibold text-white hover:bg-white/10 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          📄 {analyzeLabels.docsPartial}
+                        </button>
+                        <button
+                          type="button"
+                          disabled={isTyping}
+                          onClick={() => handleSend("none")}
+                          className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm font-semibold text-white hover:bg-white/10 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          ⛔ {analyzeLabels.docsNone}
                         </button>
                       </>
                     ) : null}

@@ -6,6 +6,8 @@ export type QuestionId =
   | "contract_reason"
   | "identity_verified"
   | "past_defaults"
+  | "stable_income_proof"
+  | "documentation_completeness"
   | "transparency"
   | "urgency"
   | "collateral_provided"
@@ -76,6 +78,22 @@ export const questions: Record<"lend" | "investment" | "purchase" | "installment
       category: "counterparty",
       weight: 0.14,
       options: ["never", "once", "many"],
+    },
+    {
+      id: "stable_income_proof",
+      text: "Do they have verifiable and stable income proof?",
+      type: "choice",
+      category: "counterparty",
+      weight: 0.1,
+      options: ["verified", "partial", "none"],
+    },
+    {
+      id: "documentation_completeness",
+      text: "How complete are supporting documents (IDs, proofs, receipts)?",
+      type: "choice",
+      category: "deal_terms",
+      weight: 0.08,
+      options: ["complete", "partial", "none"],
     },
     {
       id: "transparency",
@@ -181,6 +199,22 @@ export const questions: Record<"lend" | "investment" | "purchase" | "installment
       options: ["never", "once", "many"],
     },
     {
+      id: "stable_income_proof",
+      text: "Do they have verifiable and stable income/cashflow proof?",
+      type: "choice",
+      category: "counterparty",
+      weight: 0.1,
+      options: ["verified", "partial", "none"],
+    },
+    {
+      id: "documentation_completeness",
+      text: "How complete are supporting documents (terms, licenses, statements)?",
+      type: "choice",
+      category: "deal_terms",
+      weight: 0.08,
+      options: ["complete", "partial", "none"],
+    },
+    {
       id: "transparency",
       text: "How transparent are the documents and deal terms?",
       type: "choice",
@@ -284,6 +318,22 @@ export const questions: Record<"lend" | "investment" | "purchase" | "installment
       options: ["never", "once", "many"],
     },
     {
+      id: "stable_income_proof",
+      text: "Do they show stable business income/cashflow proof?",
+      type: "choice",
+      category: "counterparty",
+      weight: 0.1,
+      options: ["verified", "partial", "none"],
+    },
+    {
+      id: "documentation_completeness",
+      text: "How complete are supporting documents (invoice, terms, delivery proof)?",
+      type: "choice",
+      category: "deal_terms",
+      weight: 0.08,
+      options: ["complete", "partial", "none"],
+    },
+    {
       id: "transparency",
       text: "How transparent are the documents and deal terms?",
       type: "choice",
@@ -385,6 +435,22 @@ export const questions: Record<"lend" | "investment" | "purchase" | "installment
       category: "counterparty",
       weight: 0.14,
       options: ["never", "once", "many"],
+    },
+    {
+      id: "stable_income_proof",
+      text: "Do they show stable business income/cashflow proof?",
+      type: "choice",
+      category: "counterparty",
+      weight: 0.1,
+      options: ["verified", "partial", "none"],
+    },
+    {
+      id: "documentation_completeness",
+      text: "How complete are supporting documents (agreement, schedule, receipts)?",
+      type: "choice",
+      category: "deal_terms",
+      weight: 0.08,
+      options: ["complete", "partial", "none"],
     },
     {
       id: "transparency",
