@@ -184,6 +184,14 @@ const Navigation = () => {
                           {t.auth.adminPortal}
                         </Link>
                       )}
+                      <Link
+                        href="/dashboard"
+                        onClick={() => setUserMenuOpen(false)}
+                        className="flex items-center gap-2.5 w-full px-4 py-3 text-sm text-slate-300 hover:bg-white/5 hover:text-white transition-colors"
+                      >
+                        <User className="h-4 w-4 text-blue-400" />
+                        My Dashboard
+                      </Link>
                       <button
                         onClick={() => {
                           signOut();

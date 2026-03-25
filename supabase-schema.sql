@@ -45,6 +45,35 @@ create table if not exists public.signups (
   created_at  timestamptz not null default now()
 );
 
+-- ─── UNIT TESTS ─────────────────────────────────────────────
+-- Stores each unit test attempt for Global Top ranking.
+create table if not exists public.unit_test_attempts (
+  id            uuid primary key default gen_random_uuid(),
+  user_id       uuid references public.users(id) on delete cascade,
+  unit_key      text not null,
+  started_at   timestamptz not null default now(),
+  finished_at  timestamptz not null,
+  duration_ms  integer not null default 0,
+  quality_score integer not null default 0,
+  created_at    timestamptz not null default now()
+);
+
+-- ─── PREMIUM REWARDS ─────────────────────────────────────────
+-- Premium is granted to top-3 winners after unit tests.
+create table if not exists public.premium_rewards (
+  id            uuid primary key default gen_random_uuid(),
+  user_id       uuid references public.users(id) on delete cascade,
+  unit_key      text not null,
+  rank          integer not null,
+  granted_at   timestamptz not null default now(),
+  expires_at   timestamptz not null,
+  attempt_id    uuid references public.unit_test_attempts(id) on delete set null,
+  quality_score integer not null default 0,
+  duration_ms  integer not null default 0,
+  created_at   timestamptz not null default now(),
+  unique (user_id, unit_key, rank)
+);
+
 -- ─── INDEXES ─────────────────────────────────────────────────
 create index if not exists visits_created_at_idx    on public.visits(created_at desc);
 create index if not exists visits_session_id_idx    on public.visits(session_id);
@@ -52,24 +81,34 @@ create index if not exists page_views_created_at_idx on public.page_views(create
 create index if not exists signups_created_at_idx   on public.signups(created_at desc);
 create index if not exists users_email_idx          on public.users(email);
 
+create index if not exists unit_test_attempts_unit_key_idx on public.unit_test_attempts(unit_key);
+create index if not exists unit_test_attempts_user_idx on public.unit_test_attempts(user_id);
+create index if not exists premium_rewards_user_expires_idx on public.premium_rewards(user_id, expires_at desc);
+
 -- ─── ROW LEVEL SECURITY ──────────────────────────────────────
 -- Enable RLS on all tables
 alter table public.users     enable row level security;
 alter table public.visits    enable row level security;
 alter table public.page_views enable row level security;
 alter table public.signups   enable row level security;
+alter table public.unit_test_attempts enable row level security;
+alter table public.premium_rewards    enable row level security;
 
 -- Allow anon key to INSERT into all tables (needed for client-side tracking)
 create policy "Allow anon insert users"      on public.users      for insert with check (true);
 create policy "Allow anon insert visits"     on public.visits     for insert with check (true);
 create policy "Allow anon insert page_views" on public.page_views for insert with check (true);
 create policy "Allow anon insert signups"    on public.signups    for insert with check (true);
+create policy "Allow anon insert unit_test_attempts" on public.unit_test_attempts for insert with check (true);
+create policy "Allow anon insert premium_rewards"     on public.premium_rewards     for insert with check (true);
 
 -- Allow anon key to SELECT from all tables (needed for auth check + admin)
 create policy "Allow anon select users"      on public.users      for select using (true);
 create policy "Allow anon select visits"     on public.visits     for select using (true);
 create policy "Allow anon select page_views" on public.page_views for select using (true);
 create policy "Allow anon select signups"    on public.signups    for select using (true);
+create policy "Allow anon select unit_test_attempts" on public.unit_test_attempts for select using (true);
+create policy "Allow anon select premium_rewards"     on public.premium_rewards     for select using (true);
 
 -- ─── DONE ────────────────────────────────────────────────────
 -- After running this, copy your Project URL and anon key from

@@ -159,6 +159,24 @@ export default function FinancialAnalysisPage() {
                   ))}
                 </ul>
               </motion.div>
+
+              {/* Unit Test CTA */}
+              <div className="glass-card rounded-2xl p-6 mt-6 bg-white/[0.03] border border-white/10">
+                <div className="flex items-center justify-between gap-4">
+                  <div>
+                    <h3 className="text-lg font-semibold text-white">Unit Test</h3>
+                    <p className="text-sm text-slate-400 mt-1">
+                      Finish top-3 to unlock Premium for 3/2/1 days.
+                    </p>
+                  </div>
+                  <Link
+                    href="/learn/financial-analysis/test"
+                    className="rounded-xl bg-blue-500 px-4 py-3 text-sm font-semibold text-white hover:bg-blue-600 transition-colors"
+                  >
+                    Start Test
+                  </Link>
+                </div>
+              </div>
             </motion.div>
           </div>
         </div>
