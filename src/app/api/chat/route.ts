@@ -66,7 +66,10 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Invalid messages" }, { status: 400 });
     }
 
-    const apiKey = process.env.ANTHROPIC_API_KEY;
+    // Some hosting panels store env values with quotes/spaces.
+    const rawApiKey = process.env.ANTHROPIC_API_KEY;
+    const apiKey =
+      rawApiKey?.trim().replace(/^['"]/, "").replace(/['"]$/, "") ?? "";
     if (!apiKey) {
       return NextResponse.json({ error: "API key not configured" }, { status: 500 });
     }
