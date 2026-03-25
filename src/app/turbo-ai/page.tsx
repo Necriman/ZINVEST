@@ -397,18 +397,73 @@ export default function TurboAIPage() {
                       <div className="pt-4 flex flex-wrap gap-3">
                         <button
                           onClick={() => {
+                            if (!analysisType) return;
                             setRiskResult(null);
-                            setMessages([]);
                             setInput("");
-                            if (analysisType) {
-                              const seedMessage: Message = {
-                                id: Date.now(),
-                                role: "user",
-                                content: `Start AI risk scoring again for ${analysisType}. Ask me the questions you need to collect structured inputs.`,
-                              };
-                              const nextMessages = [seedMessage];
-                              setMessages(nextMessages);
-                            }
+
+                            const title =
+                              analysisType === "loan"
+                                ? "💸 Give a loan"
+                                : analysisType === "purchase"
+                                  ? "🛒 Make a purchase"
+                                  : "📈 Invest";
+
+                            const seedMessage: Message = {
+                              id: Date.now(),
+                              role: "user",
+                              content: `I selected: ${title}. Start AI risk scoring again. Ask me the questions you need to collect structured inputs for an accurate risk score.`,
+                            };
+                            const nextMessages = [seedMessage];
+                            setMessages(nextMessages);
+
+                            setIsTyping(true);
+                            void (async () => {
+                              try {
+                                const res = await fetch("/api/chat", {
+                                  method: "POST",
+                                  headers: { "Content-Type": "application/json" },
+                                  body: JSON.stringify({
+                                    messages: nextMessages.map(({ role, content }) => ({
+                                      role,
+                                      content,
+                                    })),
+                                    mode: "analyze",
+                                    analysisType,
+                                    userId: user?.id ?? null,
+                                  }),
+                                });
+
+                                const data = await res.json();
+                                if (!res.ok) throw new Error(data?.error || `Error ${res.status}`);
+
+                                if (typeof data?.risk === "number" && typeof data?.verdict === "string") {
+                                  setRiskResult({
+                                    risk: data.risk,
+                                    verdict: data.verdict,
+                                    confidence: data.confidence ?? 0,
+                                    reasons: Array.isArray(data.reasons) ? data.reasons : [],
+                                  });
+                                  return;
+                                }
+
+                                const assistantMessage: Message = {
+                                  id: Date.now() + 1,
+                                  role: "assistant",
+                                  content: data?.text || "Got it. Please answer the next question.",
+                                };
+                                setMessages((prev) => [...prev, assistantMessage]);
+                              } catch (err) {
+                                console.error("Restart risk scoring error:", err);
+                                const assistantMessage: Message = {
+                                  id: Date.now() + 1,
+                                  role: "assistant",
+                                  content: "Something went wrong. Please try again.",
+                                };
+                                setMessages((prev) => [...prev, assistantMessage]);
+                              } finally {
+                                setIsTyping(false);
+                              }
+                            })();
                           }}
                           className="rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-semibold text-white hover:bg-white/10 transition-colors"
                         >
