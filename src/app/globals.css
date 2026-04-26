@@ -1,0 +1,323 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap');
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme {
+  --color-background: #ffffff;
+  --color-foreground: #0f172a;
+
+  --color-card: #ffffff;
+  --color-card-foreground: #0f172a;
+
+  --color-popover: #ffffff;
+  --color-popover-foreground: #0f172a;
+
+  --color-primary: #2563eb;
+  --color-primary-foreground: #ffffff;
+
+  --color-secondary: #f5f7fa;
+  --color-secondary-foreground: #0f172a;
+
+  --color-muted: #f9fafb;
+  --color-muted-foreground: #94a3b8;
+
+  --color-accent: #eff6ff;
+  --color-accent-foreground: #0f172a;
+
+  --color-destructive: #ef4444;
+  --color-destructive-foreground: #ffffff;
+
+  --color-border: #e5e7eb;
+  --color-input: #e2e8f0;
+  --color-ring: #3b82f6;
+
+  --color-chart-1: #3b82f6;
+  --color-chart-2: #34d399;
+  --color-chart-3: #f59e0b;
+  --color-chart-4: #8b5cf6;
+  --color-chart-5: #ec4899;
+
+  --color-sidebar: #f9fafb;
+  --color-sidebar-foreground: #475569;
+  --color-sidebar-primary: #2563eb;
+  --color-sidebar-primary-foreground: #ffffff;
+  --color-sidebar-accent: #eff6ff;
+  --color-sidebar-accent-foreground: #0f172a;
+  --color-sidebar-border: #e5e7eb;
+  --color-sidebar-ring: #3b82f6;
+
+  --color-success: #34d399;
+  --color-primary-glow: rgba(37, 99, 235, 0.18);
+
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Inter", ui-sans-serif, system-ui, sans-serif;
+
+  --radius-lg: 1.5rem;
+  --radius-md: calc(1.5rem - 2px);
+  --radius-sm: calc(1.5rem - 4px);
+  --radius-2xl: 1.5rem;
+  --radius-3xl: 2rem;
+
+  --animate-accordion-down: accordion-down 0.2s ease-out;
+  --animate-accordion-up: accordion-up 0.2s ease-out;
+
+  @keyframes accordion-down {
+    from {
+      height: 0;
+    }
+    to {
+      height: var(--radix-accordion-content-height);
+    }
+  }
+  @keyframes accordion-up {
+    from {
+      height: var(--radix-accordion-content-height);
+    }
+    to {
+      height: 0;
+    }
+  }
+}
+
+@layer base {
+  *,
+  ::after,
+  ::before,
+  ::backdrop,
+  ::file-selector-button {
+    border-color: rgba(255, 255, 255, 0.1);
+  }
+
+  :root,
+  [data-theme="light"] {
+    --bg-primary: #ffffff;
+    --bg-secondary: #f9fafb;
+    --bg-tertiary: #f5f7fa;
+    --bg-navbar: rgba(255, 255, 255, 0.85);
+    --bg-card: #ffffff;
+    --bg-elevated: #ffffff;
+    --text-primary: #0f172a;
+    --text-secondary: #334155;
+    --text-tertiary: #475569;
+    --text-muted: #64748b;
+    --text-nav: #0f172a;
+    --text-nav-active: #2563eb;
+    --text-on-accent: #ffffff;
+    --text-disabled: #94a3b8;
+    --border: #e5e7eb;
+    --border-hover: #cbd5e1;
+    --border-navbar: rgba(0, 0, 0, 0.08);
+    --accent: #2563eb;
+    --accent-hover: #1d4ed8;
+    --accent-bg: #eff6ff;
+    --accent-text: #2563eb;
+    --success: #10b981;
+    --warning: #f59e0b;
+    --progress-track: #e5e7eb;
+    --progress-fill: #2563eb;
+    --progress-complete: #10b981;
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.04);
+    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.06);
+    --shadow-lg: 0 10px 30px rgba(0, 0, 0, 0.08);
+    --shadow-navbar: 0 1px 3px rgba(0, 0, 0, 0.05);
+
+    --background: var(--bg-primary);
+    --foreground: var(--text-primary);
+    --card: var(--bg-card);
+    --card-foreground: var(--text-primary);
+    --popover: var(--bg-primary);
+    --popover-foreground: var(--text-primary);
+    --primary: var(--accent);
+    --primary-foreground: #ffffff;
+    --secondary: var(--bg-tertiary);
+    --secondary-foreground: var(--text-primary);
+    --muted: var(--bg-secondary);
+    --muted-foreground: var(--text-tertiary);
+    --accent-foreground: var(--text-primary);
+    --destructive: #ef4444;
+    --destructive-foreground: #ffffff;
+    --input: #e2e8f0;
+    --ring: var(--accent-hover);
+    --radius: 1.5rem;
+  }
+
+  [data-theme="dark"] {
+    --bg-primary: #0a0e1a;
+    --bg-secondary: #0f1524;
+    --bg-tertiary: #141b2e;
+    --bg-navbar: rgba(15, 21, 36, 0.6);
+    --bg-card: #111827;
+    --bg-elevated: #1a2234;
+    --text-primary: #ffffff;
+    --text-secondary: #e2e8f0;
+    --text-tertiary: #cbd5e1;
+    --text-muted: #94a3b8;
+    --text-nav: #cbd5e1;
+    --text-nav-active: #60a5fa;
+    --text-on-accent: #ffffff;
+    --text-disabled: #64748b;
+    --border: #1e293b;
+    --border-hover: #334155;
+    --border-navbar: rgba(255, 255, 255, 0.08);
+    --accent: #3b82f6;
+    --accent-hover: #60a5fa;
+    --accent-bg: rgba(59, 130, 246, 0.12);
+    --accent-text: #60a5fa;
+    --success: #34d399;
+    --warning: #fbbf24;
+    --progress-track: #1e293b;
+    --progress-fill: #3b82f6;
+    --progress-complete: #10b981;
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.4);
+    --shadow-lg: 0 10px 30px rgba(0, 0, 0, 0.5);
+    --shadow-navbar: 0 1px 3px rgba(0, 0, 0, 0.3);
+
+    --background: var(--bg-primary);
+    --foreground: var(--text-primary);
+    --card: var(--bg-card);
+    --card-foreground: var(--text-primary);
+    --popover: #0d1117;
+    --popover-foreground: var(--text-primary);
+    --primary: var(--accent);
+    --primary-foreground: #ffffff;
+    --secondary: var(--bg-tertiary);
+    --secondary-foreground: var(--text-primary);
+    --muted: var(--bg-tertiary);
+    --muted-foreground: var(--text-tertiary);
+    --accent-foreground: var(--text-primary);
+    --destructive: #ef4444;
+    --destructive-foreground: #ffffff;
+    --input: rgba(255, 255, 255, 0.1);
+    --ring: var(--accent);
+    --radius: 1.5rem;
+  }
+
+  html {
+    scroll-behavior: smooth;
+    -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+  }
+
+  body {
+    background-color: var(--background);
+    color: var(--foreground);
+    font-family: var(--font-sans);
+    font-size: 16px;
+    line-height: 1.65;
+    overflow-x: hidden;
+    text-size-adjust: 100%;
+    transition: background-color 200ms ease, color 200ms ease;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-display);
+    font-weight: 700;
+    letter-spacing: -0.02em;
+  }
+
+  /* Mobile-first: pages that use bare h1/h2 without Tailwind overrides */
+  h1 {
+    font-size: clamp(1.75rem, 5vw + 0.75rem, 4.5rem);
+    line-height: 1.12;
+  }
+
+  h2 {
+    font-size: clamp(1.375rem, 3.5vw + 0.5rem, 3rem);
+    line-height: 1.2;
+  }
+
+  h3 {
+    font-size: 1.25rem;
+    line-height: 1.4;
+    font-weight: 600;
+  }
+
+  p {
+    color: var(--text-secondary);
+    font-size: clamp(0.95rem, 0.25vw + 0.9rem, 1.0625rem);
+    line-height: 1.7;
+  }
+
+  .container {
+    width: 100%;
+    margin-left: auto;
+    margin-right: auto;
+    padding-left: 1rem;
+    padding-right: 1rem;
+    max-width: 1280px;
+  }
+
+  @media (min-width: 640px) {
+    .container {
+      padding-left: 1.5rem;
+      padding-right: 1.5rem;
+    }
+  }
+
+  .font-display {
+    font-family: var(--font-display);
+  }
+}
+
+@layer utilities {
+  .glass-card {
+    background: var(--bg-card);
+    backdrop-filter: blur(12px);
+    border: 1px solid var(--border);
+    box-shadow: var(--shadow-sm);
+  }
+
+  .text-gradient {
+    background: linear-gradient(to right, #3b82f6, #60a5fa);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .bg-primary-gradient {
+    background: linear-gradient(to right, var(--accent), var(--accent-hover));
+  }
+
+  .glow-primary {
+    box-shadow: 0 1px 3px rgba(37, 99, 235, 0.12), 0 4px 12px rgba(37, 99, 235, 0.1);
+  }
+
+  .glow-primary-hover:hover {
+    box-shadow: 0 1px 3px rgba(37, 99, 235, 0.16), 0 6px 14px rgba(37, 99, 235, 0.14);
+  }
+
+  .bg-blur-circle {
+    position: absolute;
+    width: 500px;
+    height: 500px;
+    background: radial-gradient(circle, rgba(37, 99, 235, 0.12) 0%, transparent 70%);
+    filter: blur(60px);
+    pointer-events: none;
+    z-index: -1;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
+/* Tiptap lesson body: no box from global borders; gap cursor not harsh black (see @tiptap/core default styles). */
+[data-lesson-tiptap-root] .ProseMirror {
+  border-width: 0 !important;
+  border-style: none !important;
+  box-shadow: none !important;
+}
+[data-lesson-tiptap-root] .ProseMirror-focused {
+  outline: none !important;
+}
+[data-lesson-tiptap-root] .ProseMirror-gapcursor::after {
+  border-top-color: color-mix(in oklab, var(--border) 80%, var(--text-muted)) !important;
+}
