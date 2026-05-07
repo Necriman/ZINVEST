@@ -57,13 +57,19 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
 
   React.useEffect(() => {
     const sessionRaw = localStorage.getItem("zinvest-session");
-    const session = sessionRaw ? (JSON.parse(sessionRaw) as { id?: string }) : null;
+    let session: { id?: string } | null = null;
+    if (sessionRaw) {
+      try {
+        session = JSON.parse(sessionRaw) as { id?: string };
+      } catch {
+        session = null;
+      }
+    }
     const nextUserId = session?.id ?? null;
     setUserId(nextUserId);
     const userStored = nextUserId ? localStorage.getItem(`${STORAGE_KEY}:${nextUserId}`) : null;
     const stored = userStored ?? localStorage.getItem(STORAGE_KEY);
-    const preferredDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
-    const initial: Theme = stored === "dark" || stored === "light" ? stored : preferredDark ? "dark" : "light";
+    const initial: Theme = stored === "dark" || stored === "light" ? stored : "light";
     setThemeState(initial);
     applyTheme(initial);
   }, []);

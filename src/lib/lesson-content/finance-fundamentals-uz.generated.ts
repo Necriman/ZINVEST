@@ -110,16 +110,6 @@ export const FINANCE_UZ_LESSON_1: StructuredLesson = {
       type: "paragraph",
       text: "Moliya — noaniqlikda vaqt bo‘yicha pul boshqaruvi. Kapital — faoliyat uchun mablag‘. Shaxsiy / korporativ / davlat moliyasi. Kapital byudjeti, kapital tuzilmasi, murakkab foiz, naqd oqim, imkoniyat narxi, xavf, daromad, tanqid, pulning vaqt qiymati, diskontlash, NPV, hisobotlar, bozor va balans qiymati, ichki qiymat, mikro- va makroiqtisodiyot.",
     },
-    { type: "heading", text: "Amaliy test (12 savol)" },
-    {
-      type: "paragraph",
-      text: "S1. «Finance» so‘zi tarixan: B) qarzni yopish/tugatish bilan bog‘liq. S2. Markaziy savol: B) cheklangan pulni vaqt bo‘yicha eng ko‘p qiymat yaratadigan joyga qanday yo‘naltirish. S3. O‘tgan yil hisoboti bo‘yicha prognoz va zavod: C) o‘tgan buxgalteriya ma’lumoti — kelajakdagi moliya qarorining kirish ma’lumoti. S4. 8000$ fondga 9% o‘rniga 5% kreditni yopmaslik: imkoniyat narxi — B) 5% tejalgan foiz. S5. Aksiya yoki qarz bilan kengayish: C) korporativ moliya, kapital tuzilmasi. S6. Foyda bor, lekin debitor tufayli kassa yo‘q: C) aylanma kapital. S7. Davlat moliyasi: C) soliq, xarajat, davlat qarzi. S8. Ustunlar farqi: B) kim qaror qiladi va nimani optimallashtiradi. S9. 5000, 8%, 30 yil ≈ 5000×10,06: C) ~50 300. S10. «200% kafolat»: B) xavf va yo‘qotish stsenariylari. S11. Moliya va buxgalteriya: B) o‘tgan vs kelajak qarorlari. S12. Makro stavka prognozi → NPV diskonti: B) makro moliya modellariga kiradi. Tushuntirishlar EN versiyasi bilan mantiqan mos.",
-    },
-    { type: "heading", text: "O‘z-o‘zingizni baholash" },
-    {
-      type: "paragraph",
-      text: "12/12 — ajoyib, 2-modulga o‘tish mumkin. 10–11 — kichik bo‘shliqlar. 8–9 — 1.3–1.4 ni takrorlang. 6–7 — bo‘limlar va lug‘at bilan. 6 dan past — misollar bilan boshidan.",
-    },
   ],
 };
 
@@ -203,16 +193,6 @@ export const FINANCE_UZ_LESSON_2: StructuredLesson = {
     {
       type: "paragraph",
       text: "Pulning vaqt qiymati, PV, FV, diskont stavkasi, murakkab va oddiy foiz, kapitalning imkoniyat narxi, NPV, baholash, ichki qiymat, diskont omili, annuitet, diversifikatsiya, xavf–daromad, kapitalizatsiya stavkasi (cap rate), 72 qoidasi.",
-    },
-    { type: "heading", text: "Amaliy test (12 savol)" },
-    {
-      type: "paragraph",
-      text: "S1. 5 mln 3 yildan keyin yoki 4 mln bugun, 10%: B) 5 mln ning PV si 4 mln dan kam. S2. Foizlar nimani kompensatsiya qiladi: C) vaqt, inflyatsiya, noaniqlik. S3. 12 mln 2 yildan keyin 15%: B) ~9,075 mln. S4. Ikkalasi 20 mln 5 yilda, 10% va 20%: C) pastroq stavkada PV yuqori. S5. 3 mln, 12%, 4 yil: B) ~4,72 mln. S6. 12% oddiy vs 10% murakkab 5 yil: B) murakkab yaxshi. S7. Aksiya vs 14% depozit: C) imkoniyat narxi 14%. S8. 16% daromad, 14% kapital narxi: B) qiymat yaratiladi. S9. PV 26 mln, investitsiya 30 mln: C) NPV −4 mln, rad etish. S10. Stavkalar oshsa obligatsiya: B) narx tushadi. S11. Xavf–daromad: C) yuqori kutilayotgan daromad — yuqori xavf. S12. Depozit+mulk+fond: C) diversifikatsiyalangan piramida.",
-    },
-    { type: "heading", text: "O‘z-o‘zini baholash" },
-    {
-      type: "paragraph",
-      text: "12/12 — 2-modul yaxshi. 10–11 — xatolarni tuzating. 8–9 — 2.3 va 2.5 misollar bilan. 6–7 — formulalar bilan bo‘limlar. 6 dan past — vaqt qiymati va PV dan qayta.",
     },
   ],
 };

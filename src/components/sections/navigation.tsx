@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
-import { Globe, ChevronDown, Menu, X, Check, LogOut, Shield, User, Settings, BarChart3, Wallet, Sun, Moon } from "lucide-react";
+import { Globe, ChevronDown, Menu, X, Check, LogOut, Shield, User, Settings, BarChart3, Wallet, Sun, Moon, Instagram, Send } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
@@ -16,6 +16,8 @@ const LANGUAGES: { code: Language; label: string; flag: string }[] = [
   { code: "ru", label: "Русский", flag: "🇷🇺" },
   { code: "uz", label: "O'zbek", flag: "🇺🇿" },
 ];
+const INSTAGRAM_URL = "https://www.instagram.com/zinvest.app?igsh=MTE3cW1ndHI2cnFsbg==";
+const TELEGRAM_URL = "https://t.me/zinvestapp";
 
 const Navigation = () => {
   const [scrolled, setScrolled] = useState(false);
@@ -29,7 +31,7 @@ const Navigation = () => {
   const { language, setLanguage, t } = useLanguage();
   const { user, signOut } = useAuth();
   const { theme, toggleTheme } = useTheme();
-  const logoSrc = theme === "dark" ? "/zinvest-logo.svg" : "/zinvest-logo-on-light.svg";
+  const logoSrc = "/zinvest-mark.svg";
 
   useEffect(() => {
     const handleScroll = () => {
@@ -136,20 +138,40 @@ const Navigation = () => {
               : undefined
           }
         >
-          {/* Logo */}
-          <Link href="/" className="group min-h-11 min-w-0 shrink flex items-center touch-manipulation active:opacity-90">
-            <Image
-              src={logoSrc}
-              alt="Zinvest"
-              width={160}
-              height={46}
-              priority
-              className="h-8 w-auto max-w-[132px] sm:h-9 sm:max-w-none transition-transform group-hover:scale-[1.02]"
-            />
-          </Link>
+          {/* Logo + social */}
+          <div className="flex min-w-0 shrink items-center gap-2 sm:gap-3">
+            <Link href="/" className="group min-h-11 min-w-0 shrink flex items-center touch-manipulation active:opacity-90">
+              <Image
+                src={logoSrc}
+                alt="Zinvest"
+                width={32}
+                height={32}
+                priority
+                className="h-8 w-8 transition-transform group-hover:scale-[1.02]"
+              />
+            </Link>
+            <a
+              href={INSTAGRAM_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hidden h-9 w-9 items-center justify-center rounded-full text-[var(--text-nav)] transition-colors hover:bg-[var(--accent-bg)] hover:text-[var(--text-nav-active)] md:flex"
+              aria-label="Instagram"
+            >
+              <Instagram className="h-4 w-4" />
+            </a>
+            <a
+              href={TELEGRAM_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hidden h-9 w-9 items-center justify-center rounded-full text-[var(--text-nav)] transition-colors hover:bg-[var(--accent-bg)] hover:text-[var(--text-nav-active)] md:flex"
+              aria-label="Telegram"
+            >
+              <Send className="h-4 w-4" />
+            </a>
+          </div>
 
           {/* Desktop Navigation Links */}
-          <div className="hidden items-center gap-1 md:flex">
+          <div className="ml-6 hidden items-center gap-1 md:flex">
             {navLinks.map((link) => (
               <Link
                 key={link.label}
@@ -375,19 +397,39 @@ const Navigation = () => {
                 onClick={(e) => e.stopPropagation()}
               >
                 <div className="flex items-center justify-between border-b border-[var(--border)] px-4 pb-3">
-                  <Link
-                    href="/"
-                    className="flex min-h-11 items-center touch-manipulation active:opacity-90"
-                    onClick={() => setMobileMenuOpen(false)}
-                  >
-                    <Image
-                      src={logoSrc}
-                      alt="Zinvest"
-                      width={140}
-                      height={40}
-                      className="h-8 w-auto"
-                    />
-                  </Link>
+                  <div className="flex items-center gap-2">
+                    <Link
+                      href="/"
+                      className="flex min-h-11 items-center touch-manipulation active:opacity-90"
+                      onClick={() => setMobileMenuOpen(false)}
+                    >
+                      <Image
+                        src={logoSrc}
+                        alt="Zinvest"
+                        width={32}
+                        height={32}
+                        className="h-8 w-8"
+                      />
+                    </Link>
+                    <a
+                      href={INSTAGRAM_URL}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex h-9 w-9 items-center justify-center rounded-full text-[var(--text-nav)] transition-colors hover:bg-[var(--accent-bg)] hover:text-[var(--text-nav-active)]"
+                      aria-label="Instagram"
+                    >
+                      <Instagram className="h-4 w-4" />
+                    </a>
+                    <a
+                      href={TELEGRAM_URL}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex h-9 w-9 items-center justify-center rounded-full text-[var(--text-nav)] transition-colors hover:bg-[var(--accent-bg)] hover:text-[var(--text-nav-active)]"
+                      aria-label="Telegram"
+                    >
+                      <Send className="h-4 w-4" />
+                    </a>
+                  </div>
                   <button
                     type="button"
                     aria-label={closeMenuLabel}

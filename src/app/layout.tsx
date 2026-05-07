@@ -41,7 +41,7 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <head>
         <Script id="zinvest-theme-bootstrap" strategy="beforeInteractive">
-          {`(function(){try{var key='zinvest-theme';var stored=localStorage.getItem(key);var theme=stored||((window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches)?'dark':'light');document.documentElement.setAttribute('data-theme',theme);if(theme==='dark'){document.documentElement.classList.add('dark');}else{document.documentElement.classList.remove('dark');}}catch(e){document.documentElement.setAttribute('data-theme','light');document.documentElement.classList.remove('dark');}})();`}
+          {`(function(){try{var key='zinvest-theme';var stored=localStorage.getItem(key);var theme=(stored==='dark'||stored==='light')?stored:'light';document.documentElement.setAttribute('data-theme',theme);if(theme==='dark'){document.documentElement.classList.add('dark');}else{document.documentElement.classList.remove('dark');}}catch(e){document.documentElement.setAttribute('data-theme','light');document.documentElement.classList.remove('dark');}})();`}
         </Script>
       </head>
       <body className="min-h-dvh overflow-x-hidden antialiased bg-background text-foreground">
