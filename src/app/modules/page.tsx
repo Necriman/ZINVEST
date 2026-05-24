@@ -232,42 +232,33 @@ export default function ModulesPage() {
       <main className="min-h-screen bg-[var(--bg-primary)] text-[var(--text-primary)]">
         <Navigation />
 
-        <section className="relative px-6 pb-24 pt-32">
+        <section className="relative px-3 pb-8 pt-20 sm:px-4 sm:pt-24">
           <div className="pointer-events-none absolute inset-0 overflow-hidden">
             <div className="absolute top-1/4 -left-32 h-[400px] w-[400px] rounded-full bg-blue-500/10 blur-[100px]"></div>
             <div className="absolute bottom-1/4 -right-32 h-[350px] w-[350px] rounded-full bg-purple-500/10 blur-[100px]"></div>
           </div>
 
-          <div className="relative mx-auto max-w-7xl">
+          <div className="relative w-full">
+            {/* Compact header row */}
             <motion.div
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.5 }}
-            >
-              <Link
-                href="/"
-                className="mb-8 inline-flex items-center gap-2 text-[var(--text-muted)] transition-colors duration-300 hover:text-[var(--text-primary)]"
-              >
-                <ArrowLeft className="h-4 w-4" />
-                {t.modulesPage.backToHome}
-              </Link>
-            </motion.div>
-
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
+              initial={{ opacity: 0, y: -8 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.1 }}
-              className="mb-12"
+              transition={{ duration: 0.35 }}
+              className="mb-4 flex flex-wrap items-center justify-between gap-3"
             >
-              <h1 className="mb-2 text-3xl font-bold text-[var(--text-primary)] md:text-4xl">Learning Portal</h1>
-              <p className="text-[var(--text-tertiary)]">Unit-based workspace with synced AI tutoring and assessments.</p>
-
-              <div className="glass-card mt-8 rounded-2xl border border-[var(--border)] p-6">
-                <div className="mb-3 flex items-center justify-between">
-                  <p className="text-sm font-medium text-slate-700 dark:text-slate-300">Overall Progress</p>
-                  <p className="text-sm font-semibold text-blue-700 dark:text-blue-300">{overallProgress}%</p>
-                </div>
-                <div className="h-3 w-full overflow-hidden rounded-full bg-slate-200 dark:bg-white/10">
+              <div className="flex items-center gap-3">
+                <Link
+                  href="/"
+                  className="inline-flex items-center gap-1.5 text-sm text-[var(--text-muted)] transition-colors hover:text-[var(--text-primary)]"
+                >
+                  <ArrowLeft className="h-4 w-4" />
+                  {t.modulesPage.backToHome}
+                </Link>
+                <span className="text-[var(--border)]">·</span>
+                <h1 className="text-base font-bold text-[var(--text-primary)]">Learning Portal</h1>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="h-2 w-32 overflow-hidden rounded-full bg-slate-200 dark:bg-white/10">
                   <motion.div
                     key={overallProgress}
                     initial={{ width: 0 }}
@@ -276,23 +267,11 @@ export default function ModulesPage() {
                     className="h-full rounded-full bg-gradient-to-r from-blue-500 to-blue-400"
                   />
                 </div>
-                <div className="mt-4 grid grid-cols-2 gap-3 text-xs sm:grid-cols-4">
-                  {unitProgress.map((u, idx) => (
-                    <div
-                      key={u.key}
-                      className="rounded-xl border border-[var(--border)] bg-[var(--bg-tertiary)] px-3 py-2 text-slate-700 dark:text-slate-300"
-                    >
-                      <p className="text-[11px] text-slate-600 dark:text-slate-400">Unit {idx + 1}</p>
-                      <p className="font-semibold">
-                        {u.completed}/{u.total}
-                      </p>
-                    </div>
-                  ))}
-                </div>
+                <span className="text-xs font-semibold text-blue-600 dark:text-blue-400">{overallProgress}%</span>
               </div>
             </motion.div>
 
-            <div className="grid gap-6 lg:grid-cols-12">
+            <div className="grid gap-3 lg:grid-cols-12">
               <div className="lg:col-span-3">
                 <div className="rounded-2xl border border-[var(--border)] bg-[var(--bg-card)] p-4">
                   <p className="mb-3 text-sm font-semibold text-[var(--text-primary)]">Units</p>
