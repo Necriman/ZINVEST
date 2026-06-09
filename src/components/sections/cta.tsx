@@ -1,25 +1,25 @@
-"use client";
+﻿"use client";
 
 import React from 'react';
 import { motion } from 'framer-motion';
-import { useInView } from 'react-intersection-observer';
 import Link from 'next/link';
 import { useLanguage } from '@/lib/language-context';
+import { scaleInVariants, viewportOnce } from '@/lib/motion';
+import { PulseRingLink } from '@/components/motion/pulse-ring-link';
 
 const CTA = () => {
-  const [ref, inView] = useInView({ triggerOnce: true, threshold: 0.1 });
   const { t } = useLanguage();
   
   return (
-    <section ref={ref} className="relative bg-white dark:bg-[#0a0f1c] px-4 py-16 sm:px-6 sm:py-24">
+    <section className="relative bg-[var(--bg-card)] px-4 py-16 sm:px-6 sm:py-24">
       <div className="mx-auto max-w-7xl">
         <motion.div 
-          initial={{ opacity: 0, y: 30 }}
-          animate={inView ? { opacity: 1, y: 0 } : {}}
-          transition={{ duration: 0.6 }}
+          initial="hidden"
+          whileInView="visible"
+          viewport={viewportOnce}
+          variants={scaleInVariants}
           className="relative overflow-hidden rounded-2xl bg-[#2563eb] px-5 py-12 text-center shadow-2xl sm:rounded-[2.5rem] sm:px-8 sm:py-16 md:px-12 md:py-20"
         >
-          {/* Soft glows — avoid full white in center (washes out white text) */}
           <div className="absolute inset-0 pointer-events-none overflow-hidden">
             <div className="absolute top-1/2 left-1/2 h-[min(100vw,34rem)] w-[min(100vw,34rem)] -translate-x-1/2 -translate-y-1/2 rounded-full bg-sky-300/20 blur-3xl dark:bg-[#0a0f1c]/15" />
             <div className="absolute -top-24 -right-24 h-64 w-64 rounded-full bg-blue-400/25 blur-3xl" />
@@ -35,15 +35,16 @@ const CTA = () => {
             </p>
 
             <div className="mt-8 flex w-full max-w-md flex-col items-stretch justify-center gap-3 sm:mx-auto sm:max-w-none sm:mt-10 sm:flex-row sm:items-center sm:gap-4">
-              <Link 
-                href="/learn" 
-                className="inline-flex min-h-12 w-full items-center justify-center rounded-full bg-white px-6 py-3 text-[15px] font-semibold text-[#2563eb] shadow-lg shadow-black/5 transition-all duration-200 hover:bg-sky-50 active:scale-[0.98] sm:w-auto sm:px-8 sm:text-base dark:bg-[#0a0f1c] dark:text-sky-200 dark:hover:bg-slate-900"
+              <PulseRingLink
+                href="/onboarding"
+                className="w-full sm:w-auto"
+                innerClassName="btn-interactive inline-flex min-h-12 w-full items-center justify-center rounded-full bg-white px-6 py-3 text-[15px] font-semibold text-[#2563eb] shadow-lg shadow-black/5 transition-colors duration-200 hover:bg-sky-50 sm:w-auto sm:px-8 sm:text-base dark:bg-[#0a0f1c] dark:text-sky-200 dark:hover:bg-slate-900"
               >
                 {t.cta.startFree}
-              </Link>
+              </PulseRingLink>
               <Link 
                 href="/modules" 
-                className="inline-flex min-h-12 w-full items-center justify-center rounded-full border border-white/40 bg-white/10 px-6 py-3 text-[15px] font-semibold text-white shadow-sm backdrop-blur-sm transition-all duration-200 hover:border-white/60 hover:bg-white/20 active:scale-[0.98] sm:w-auto sm:px-8 sm:text-base dark:border-white/25 dark:bg-[#0a0f1c]/20 dark:hover:bg-[#0a0f1c]/40"
+                className="btn-interactive inline-flex min-h-12 w-full items-center justify-center rounded-full border border-white/40 bg-white/10 px-6 py-3 text-[15px] font-semibold text-white shadow-sm backdrop-blur-sm transition-colors duration-200 hover:border-white/60 hover:bg-white/20 sm:w-auto sm:px-8 sm:text-base dark:border-white/25 dark:bg-[#0a0f1c]/20 dark:hover:bg-[#0a0f1c]/40"
               >
                 {t.cta.exploreModules}
               </Link>

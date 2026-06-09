@@ -1,171 +1,284 @@
 "use client";
 
-import React from 'react';
-import { 
-  ArrowRight, 
-  Play, 
-  Calculator, 
-  TrendingUp, 
-  Receipt, 
-  Target 
-} from 'lucide-react';
-import { motion } from 'framer-motion';
-import Link from 'next/link';
-import { useLanguage } from '@/lib/language-context';
+import React from "react";
+import {
+  ArrowRight, Play, Wallet, TrendingUp, ShieldCheck, BarChart3, Rocket, Trophy, Star,
+  type LucideIcon,
+} from "lucide-react";
+import { motion } from "framer-motion";
+import Link from "next/link";
+import { useLanguage } from "@/lib/language-context";
+import { useReducedMotion } from "@/lib/motion";
+
+const FLOATING_BADGES: { label: string; color: string; icon: LucideIcon; top?: string; left?: string; right?: string; bottom?: string }[] = [
+  { label: "Cash Flow", color: "bg-emerald-500", icon: Wallet, top: "18%", left: "8%" },
+  { label: "Investing", color: "bg-blue-500", icon: TrendingUp, top: "12%", right: "10%" },
+  { label: "Risk Analysis", color: "bg-purple-500", icon: ShieldCheck, bottom: "28%", left: "6%" },
+  { label: "Budgeting", color: "bg-amber-500", icon: BarChart3, bottom: "24%", right: "8%" },
+  { label: "Startup Finance", color: "bg-rose-500", icon: Rocket, top: "55%", left: "4%" },
+];
 
 const HeroSection = () => {
   const { t } = useLanguage();
-  
+  const reducedMotion = useReducedMotion();
+
   return (
-    <section
-      className="relative min-h-screen overflow-hidden px-4 pb-16 pt-28 sm:px-6 sm:pb-20 sm:pt-32"
-      style={{
-        background:
-          "radial-gradient(1200px 600px at 50% 0%, color-mix(in srgb, var(--accent) 16%, transparent), transparent 70%), var(--bg-primary)",
-      }}
-    >
-      {/* Background Radial Blurs — saturated blues in dark; soft blues in light */}
-      <div className="pointer-events-none absolute inset-0 overflow-hidden">
-        <div className="absolute top-1/4 -left-32 h-[400px] w-[400px] rounded-full bg-blue-400/35 blur-[100px] dark:bg-blue-600/45"></div>
-        <div className="absolute top-1/3 -right-32 h-[350px] w-[350px] rounded-full bg-sky-400/30 blur-[100px] dark:bg-sky-500/40"></div>
-        <div className="absolute bottom-1/4 left-1/3 h-[300px] w-[300px] rounded-full bg-indigo-400/30 blur-[100px] dark:bg-blue-500/35"></div>
-      </div>
+    <section className="relative min-h-screen overflow-hidden bg-[var(--bg-primary)] flex flex-col">
+      {/* Top subtle accent */}
+      <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-blue-300/40 to-transparent" />
 
-      <div className="relative mx-auto max-w-7xl">
-        <div className="flex flex-col items-center text-center">
-          {/* Headline */}
-          <motion.h1 
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.1 }}
-            className="mt-6 max-w-4xl text-[clamp(48px,7vw,88px)] font-extrabold leading-[1.08] tracking-tight text-[var(--text-primary)]"
-          >
-            <span className="block sm:inline">{t.hero.headline1}</span>{' '}
-            <span className="block bg-gradient-to-r from-[var(--accent)] to-[var(--accent-hover)] bg-clip-text text-transparent sm:inline">
-              {t.hero.headline2}
-            </span>{' '}
-            <span className="block sm:inline">{t.hero.headline3}</span>
-          </motion.h1>
+      {/* ── HERO MAIN ── */}
+      <div className="flex-1 flex flex-col items-center justify-center px-4 pt-24 pb-16 sm:px-6 text-center">
 
-          {/* Subheadline */}
-          <motion.p 
-            initial={{ opacity: 0, y: 20 }}
+        {/* Floating topic badges */}
+        {!reducedMotion && (
+          <div className="pointer-events-none absolute inset-0">
+            {FLOATING_BADGES.map((b, i) => {
+              const Icon = b.icon;
+              return (
+                <motion.div
+                  key={b.label}
+                  className={`absolute hidden lg:flex items-center gap-2 ${b.color} text-white text-[13px] font-semibold px-4 py-2 rounded-full shadow-lg`}
+                  style={{ top: b.top, left: b.left, right: b.right, bottom: b.bottom }}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: [0, -8, 0] }}
+                  transition={{
+                    opacity: { delay: 0.6 + i * 0.15, duration: 0.5 },
+                    y: { delay: 0.6 + i * 0.15, duration: 3 + i * 0.4, repeat: Infinity, ease: "easeInOut" },
+                  }}
+                >
+                  <Icon className="h-3.5 w-3.5" />
+                  {b.label}
+                </motion.div>
+              );
+            })}
+          </div>
+        )}
+
+        <div className="relative mx-auto max-w-4xl">
+          {/* Overline */}
+          <motion.p
+            initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.2 }}
-            className="mt-6 max-w-2xl text-[15px] leading-relaxed text-[var(--text-tertiary)] sm:text-lg md:text-xl"
+            transition={{ duration: 0.5 }}
+            className="text-[11px] font-bold uppercase tracking-widest text-blue-600 mb-4"
           >
-            {t.hero.subheadline}
+            YOUR TARGET LEVEL. YOUR FINANCIAL FUTURE.
           </motion.p>
 
-          {/* CTAs */}
-          <motion.div 
-            initial={{ opacity: 0, y: 20 }}
+          {/* Big number / headline */}
+          <motion.div
+            initial={{ opacity: 0, y: 24 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.3 }}
-            className="mt-8 flex w-full max-w-md flex-col items-stretch gap-3 sm:max-w-none sm:flex-row sm:items-center sm:justify-center"
+            transition={{ duration: 0.55, delay: 0.1 }}
           >
-            <Link href="/learn" className="group relative w-full sm:w-auto">
-              <div className="absolute -inset-1 rounded-full opacity-40 blur-md transition-opacity group-hover:opacity-55" style={{ background: "linear-gradient(to right, var(--accent), var(--accent-hover))" }}></div>
-              <span className="relative flex min-h-12 items-center justify-center gap-2 rounded-full px-6 py-3 text-[15px] font-medium text-[var(--text-on-accent)] transition-all duration-200 active:scale-[0.98] sm:px-8 sm:text-base" style={{ backgroundColor: "var(--accent)", boxShadow: "0 8px 24px color-mix(in srgb, var(--accent) 45%, transparent)" }}>
-                {t.hero.startLearning}
-                <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
-              </span>
-            </Link>
-            
-            <Link href="/modules" className="w-full sm:w-auto">
-              <span className="flex min-h-12 w-full items-center justify-center gap-2 rounded-full border px-6 py-3 text-[15px] font-medium transition-all duration-200 active:scale-[0.98] sm:px-8 sm:text-base" style={{ borderColor: "var(--border)", backgroundColor: "color-mix(in srgb, var(--bg-primary) 95%, transparent)", color: "var(--text-primary)" }}>
-                <Play className="h-4 w-4" style={{ color: "var(--text-muted)" }} />
-                {t.hero.exploreApp}
-              </span>
-            </Link>
+            <h1 className="text-[clamp(60px,10vw,120px)] font-extrabold leading-none tracking-tight text-[var(--text-primary)] mb-2">
+              Finance
+            </h1>
+            <h1 className="text-[clamp(60px,10vw,120px)] font-extrabold leading-none tracking-tight bg-gradient-to-r from-blue-600 to-blue-400 bg-clip-text text-transparent mb-6">
+              mastery.
+            </h1>
           </motion.div>
 
-          {/* Dashboard Mockup */}
-          <motion.div 
-            initial={{ opacity: 0, y: 40 }}
+          <motion.p
+            initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.7, delay: 0.4 }}
-            className="mt-14 w-full max-w-[900px] sm:mt-24"
+            transition={{ duration: 0.5, delay: 0.25 }}
+            className="text-[17px] text-[var(--text-muted)] max-w-xl mx-auto mb-10 leading-relaxed"
           >
-            <div className="rounded-2xl border border-slate-200 dark:border-white/10 bg-white dark:bg-[#0a0f1c] p-1.5 backdrop-blur-sm shadow-[0_4px_24px_rgba(15,23,42,0.08)] sm:rounded-[40px] sm:p-2">
-              <div className="relative overflow-x-auto rounded-[20px] bg-slate-50 dark:bg-[#0d1117] p-4 sm:overflow-hidden sm:rounded-[32px] sm:p-8">
-                {/* Traffic Lights / Header */}
-                <div className="mb-8 flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <div className="h-3 w-3 rounded-full bg-[#ff5f56]"></div>
-                    <div className="h-3 w-3 rounded-full bg-[#ffbd2e]"></div>
-                    <div className="h-3 w-3 rounded-full bg-[#27c93f]"></div>
-                  </div>
-                  <span className="text-[10px] font-medium uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">
-                    {t.hero.dashboardTitle}
-                  </span>
+            Learn investing, budgeting, and startup finance with AI. Zinvest shows you exactly what to fix — then drills it until it sticks.
+          </motion.p>
+
+          {/* CTA buttons */}
+          <motion.div
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.35 }}
+            className="flex flex-col sm:flex-row items-center justify-center gap-3"
+          >
+            <Link
+              href="/onboarding"
+              className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white text-[15px] font-semibold px-7 py-3.5 rounded-full transition-colors shadow-lg shadow-blue-500/30"
+            >
+              Start preparation <ArrowRight className="h-4 w-4" />
+            </Link>
+            <Link
+              href="/learn"
+              className="flex items-center gap-2 border border-[var(--border)] bg-[var(--bg-card)] text-[var(--text-primary)] text-[15px] font-medium px-7 py-3.5 rounded-full hover:bg-[var(--bg-secondary)] transition-colors"
+            >
+              <Play className="h-4 w-4 text-[var(--text-muted)]" />
+              See platform
+            </Link>
+          </motion.div>
+        </div>
+      </div>
+
+      {/* ── PRACTICE ENGINE section (SAT Station style) ── */}
+      <div className="border-t border-[var(--border)] bg-[var(--bg-card)]">
+        <div className="mx-auto max-w-6xl px-6 py-16 grid lg:grid-cols-2 gap-12 items-center">
+          <motion.div
+            initial={{ opacity: 0, x: -24 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.5 }}
+          >
+            <p className="text-[11px] font-bold uppercase tracking-widest text-blue-600 mb-4">PRACTICE ENGINE</p>
+            <h2 className="text-[38px] font-extrabold text-[var(--text-primary)] leading-tight mb-6">
+              Learn, practice,<br />analyze.
+            </h2>
+            <p className="text-[15px] text-[var(--text-muted)] mb-8">
+              Start with a knowledge check. Zinvest shows what to fix next.
+            </p>
+            <div className="space-y-4">
+              {[
+                { label: "Unit lessons", desc: "4 complete financial units" },
+                { label: "AI Tutor", desc: "Ask questions in every lesson" },
+                { label: "Startup tracker", desc: "Track your real business cash flow" },
+              ].map(({ label, desc }) => (
+                <div key={label} className="flex items-center justify-between border-b border-[var(--border)] pb-3">
+                  <span className="text-[15px] font-semibold text-[var(--text-primary)]">{label}</span>
+                  <span className="text-[14px] text-[var(--text-muted)]">{desc}</span>
                 </div>
+              ))}
+            </div>
+          </motion.div>
 
-                {/* Top Grid */}
-                <div className="grid gap-4 md:grid-cols-3">
-                  <div className="rounded-2xl border border-slate-200 dark:border-white/10 bg-white dark:bg-[#0a0f1c] p-5 text-left">
-                    <p className="text-[13px] font-medium text-[var(--text-muted)]">{t.hero.yourProgress}</p>
-                    <p className="mt-2 text-2xl font-bold text-slate-900 dark:text-white">12 {t.hero.lessons}</p>
-                    <div className="mt-4 h-2 w-full overflow-hidden rounded-full bg-slate-200">
-                      <div className="h-full w-[65%] rounded-full bg-gradient-to-r from-blue-500 to-blue-400"></div>
-                    </div>
-                    <p className="mt-2 text-[13px] text-[var(--text-muted)]">65% {t.hero.complete}</p>
-                  </div>
-
-                  <div className="rounded-2xl border border-slate-200 dark:border-white/10 bg-white dark:bg-[#0a0f1c] p-5 text-left">
-                    <p className="text-[13px] font-medium text-[var(--text-muted)]">{t.hero.currentModule}</p>
-                    <p className="mt-2 text-lg font-bold text-slate-900 dark:text-white">{t.hero.cashFlowBasics}</p>
-                    <button className="mt-4 flex items-center gap-1.5 text-xs font-semibold text-blue-600 transition-colors hover:text-blue-500">
-                      <Play className="h-3 w-3 fill-blue-600" />
-                      {t.hero.continueLearning}
-                    </button>
-                  </div>
-
-                  <div className="rounded-2xl border border-slate-200 dark:border-white/10 bg-white dark:bg-[#0a0f1c] p-5 text-left">
-                    <p className="text-[13px] font-medium text-[var(--text-muted)]">{t.hero.knowledgeScore}</p>
-                    <p className="mt-2 text-2xl font-bold text-slate-900 dark:text-white">{t.hero.level} 3</p>
-                    <div className="mt-4 flex gap-1.5">
-                      {[1, 2, 3].map((i) => (
-                        <div key={i} className="h-1.5 flex-1 rounded-full bg-blue-400"></div>
-                      ))}
-                      {[4, 5].map((i) => (
-                        <div key={i} className="h-1.5 flex-1 rounded-full bg-slate-200"></div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-
-                {/* Bottom Module Grid */}
-                <div className="mt-6 grid gap-4 md:grid-cols-4">
-                  {[
-                    { title: t.hero.finance101, icon: Calculator, progress: 100, status: t.hero.completed, color: 'var(--progress-complete)' },
-                    { title: t.hero.cashFlow, icon: TrendingUp, progress: 65, status: '65%', color: 'var(--progress-fill)' },
-                    { title: t.hero.taxes, icon: Receipt, progress: 20, status: '20%', color: 'var(--progress-fill)' },
-                    { title: t.hero.investing, icon: Target, progress: 0, status: t.hero.notStarted, color: 'var(--progress-track)' }
-                  ].map((module, idx) => (
-                    <div 
-                      key={idx} 
-                      className="group/module rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-[#0a0f1c] p-4 text-left transition-all hover:bg-slate-50 dark:bg-[#0d1117]"
-                    >
-                      <div className="mb-4 flex items-center gap-2">
-                        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-500/10 transition-colors group-hover/module:bg-blue-500/20">
-                          <module.icon className="h-4 w-4 text-blue-400" />
-                        </div>
-                        <span className="text-xs font-semibold text-slate-900 dark:text-white">{module.title}</span>
-                      </div>
-                      <div className="h-1 w-full overflow-hidden rounded-full bg-slate-200">
-                        <div
-                          className="h-full rounded-full"
-                          style={{ width: `${module.progress}%`, backgroundColor: module.color }}
-                        ></div>
-                      </div>
-                      <p className="mt-2 text-[13px] font-medium text-[var(--text-muted)]">{module.status}</p>
-                    </div>
+          {/* Mock app window */}
+          <motion.div
+            initial={{ opacity: 0, x: 24 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.5, delay: 0.1 }}
+          >
+            <div className="rounded-2xl border border-[var(--border)] bg-[var(--bg-primary)] shadow-xl overflow-hidden">
+              <div className="flex items-center gap-2 px-4 py-3 border-b border-[var(--border)] bg-[var(--bg-secondary)]">
+                <div className="w-3 h-3 rounded-full bg-rose-400" />
+                <div className="w-3 h-3 rounded-full bg-amber-400" />
+                <div className="w-3 h-3 rounded-full bg-emerald-400" />
+                <span className="ml-3 text-[11px] text-[var(--text-muted)]">Zinvest — Finance Fundamentals</span>
+              </div>
+              <div className="p-5">
+                <p className="text-[11px] text-[var(--text-muted)] mb-1">Lesson 1 · ~45 min · Unit 01</p>
+                <h3 className="text-[16px] font-bold text-[var(--text-primary)] mb-3">What is Cash Flow?</h3>
+                <div className="space-y-2 mb-4">
+                  {["Cash flow is the net amount of money moving in and out of a business over a period of time.", "Positive cash flow means more money comes in than goes out."].map((t, i) => (
+                    <p key={i} className="text-[13px] text-[var(--text-muted)] leading-relaxed">{t}</p>
                   ))}
+                </div>
+                <div className="bg-blue-50 border border-blue-100 rounded-xl p-3 mb-4">
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-blue-700 mb-1">KEY IDEA</p>
+                  <p className="text-[13px] text-blue-900">Cash flow ≠ profit. A profitable business can still run out of cash.</p>
+                </div>
+                <div className="flex gap-2">
+                  <button className="flex-1 bg-blue-600 text-white text-[12px] font-semibold py-2 rounded-lg">Mark complete</button>
+                  <button className="flex-1 border border-[var(--border)] text-[var(--text-secondary)] text-[12px] font-medium py-2 rounded-lg">Next lesson →</button>
                 </div>
               </div>
             </div>
           </motion.div>
+        </div>
+      </div>
+
+      {/* ── DARK SECTION (SAT Station "Take one test") ── */}
+      <div className="bg-[#0a0f1c] text-white">
+        <div className="mx-auto max-w-6xl px-6 py-16 grid lg:grid-cols-2 gap-12 items-center">
+          <motion.div
+            initial={{ opacity: 0, y: 24 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.5 }}
+          >
+            <h2 className="text-[38px] font-extrabold leading-tight mb-4">
+              Take one test.<br />See what costs you<br />knowledge points.
+            </h2>
+            <p className="text-[15px] text-slate-400 mb-8">
+              No guesswork. Just a clear route from your first baseline to financial mastery.
+            </p>
+            <Link
+              href="/onboarding"
+              className="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white font-semibold px-6 py-3.5 rounded-xl transition-colors"
+            >
+              Start your first test <ArrowRight className="h-4 w-4" />
+            </Link>
+          </motion.div>
+
+          {/* Journey map */}
+          <motion.div
+            initial={{ opacity: 0, x: 24 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.5, delay: 0.15 }}
+            className="flex items-center justify-center"
+          >
+            <div className="relative w-full max-w-sm">
+              {[
+                { label: "Baseline", x: 10, y: 80, color: "#3b82f6" },
+                { label: "Analyze", x: 35, y: 50, color: "#8b5cf6" },
+                { label: "Practice", x: 65, y: 65, color: "#10b981" },
+                { label: "Mastery", x: 90, y: 20, color: "#f59e0b" },
+              ].map((node) => (
+                <div
+                  key={node.label}
+                  className="absolute flex flex-col items-center"
+                  style={{ left: `${node.x}%`, top: `${node.y}%`, transform: "translate(-50%, -50%)" }}
+                >
+                  <div
+                    className="w-10 h-10 rounded-full border-4 border-white/20 flex items-center justify-center text-white font-bold text-[12px]"
+                    style={{ backgroundColor: node.color }}
+                  />
+                  <span className="text-[11px] text-slate-300 mt-1 whitespace-nowrap font-medium">{node.label}</span>
+                </div>
+              ))}
+              <svg className="w-full h-40" viewBox="0 0 100 100" fill="none">
+                <path d="M10,80 Q25,30 35,50 Q50,70 65,65 Q80,60 90,20" stroke="#3b82f6" strokeWidth="2" strokeDasharray="4,3" strokeLinecap="round" fill="none" />
+              </svg>
+            </div>
+          </motion.div>
+        </div>
+      </div>
+
+      {/* ── TESTIMONIALS ── */}
+      <div className="border-t border-[var(--border)] bg-[var(--bg-primary)]">
+        <div className="mx-auto max-w-4xl px-6 py-16">
+          <div className="space-y-6 mb-12">
+            {[
+              { name: "Aziz K.", badge: "+3 Units done", text: "Everything is in one place: units, AI tutor, cash flow tracker. I understood P&L in one week.", stars: 5 },
+              { name: "Madina S.", badge: "Streak: 14 days", text: "The risk analysis tool showed me exactly where my startup was losing money. Game changer.", stars: 5 },
+            ].map((r) => (
+              <div key={r.name} className="bg-[var(--bg-card)] border border-[var(--border)] rounded-2xl p-5">
+                <div className="flex items-start justify-between mb-2">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full bg-amber-50 dark:bg-amber-500/10 flex items-center justify-center">
+                      <Trophy className="h-5 w-5 text-amber-500" />
+                    </div>
+                    <div>
+                      <p className="text-[14px] font-bold text-[var(--text-primary)]">{r.name}</p>
+                      <p className="text-[12px] font-semibold text-blue-600">{r.badge}</p>
+                    </div>
+                  </div>
+                  <div className="flex gap-0.5">
+                    {Array(r.stars).fill(0).map((_, i) => <Star key={i} className="h-4 w-4 fill-amber-400 text-amber-400" />)}
+                  </div>
+                </div>
+                <p className="text-[14px] text-[var(--text-muted)] italic">&ldquo;{r.text}&rdquo;</p>
+              </div>
+            ))}
+          </div>
+
+          <div className="text-center">
+            <h2 className="text-[28px] font-extrabold text-[var(--text-primary)] mb-3">
+              Learners need a plan,<br />not another random course.
+            </h2>
+            <p className="text-[15px] text-[var(--text-muted)] mb-8">
+              Zinvest turns your financial gaps into focused next steps.
+            </p>
+            <Link
+              href="/onboarding"
+              className="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold px-7 py-3.5 rounded-full transition-colors"
+            >
+              Continue <ArrowRight className="h-4 w-4" />
+            </Link>
+          </div>
         </div>
       </div>
     </section>

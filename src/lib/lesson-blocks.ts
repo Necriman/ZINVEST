@@ -2,7 +2,8 @@ import { escapeHtml } from "@/lib/strip-html";
 
 export type LessonBlock =
   | { type: "heading"; text: string }
-  | { type: "paragraph"; text: string };
+  | { type: "paragraph"; text: string }
+  | { type: "image"; src: string; alt?: string };
 
 export type StructuredLesson = {
   title: string;
@@ -16,7 +17,10 @@ export type LessonPersistV3 = {
 };
 
 export function blocksToPlainText(lesson: StructuredLesson): string {
-  const parts = [lesson.title, "", ...lesson.content.map((b) => (b.type === "heading" ? `# ${b.text}` : b.text))];
+  const parts = [lesson.title, "", ...lesson.content.map((b) => {
+    if (b.type === "image") return `[image: ${b.src}]`;
+    return b.type === "heading" ? `# ${b.text}` : b.text;
+  })];
   return parts.join("\n\n");
 }
 
@@ -26,6 +30,8 @@ export function blocksToBodyHtml(lesson: StructuredLesson): string {
   for (const b of lesson.content) {
     if (b.type === "heading") {
       out.push(`<h2>${escapeHtml(b.text)}</h2>`);
+    } else if (b.type === "image") {
+      out.push(`<img src="${escapeHtml(b.src)}" alt="${escapeHtml(b.alt ?? "")}" />`);
     } else {
       const chunks = b.text.split(/\n\n+/);
       for (const chunk of chunks) {
@@ -73,6 +79,9 @@ export function isLessonBlock(v: unknown): v is LessonBlock {
   const o = v as Record<string, unknown>;
   if (o.type === "heading" || o.type === "paragraph") {
     return typeof o.text === "string";
+  }
+  if (o.type === "image") {
+    return typeof o.src === "string";
   }
   return false;
 }

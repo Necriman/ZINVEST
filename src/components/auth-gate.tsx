@@ -11,10 +11,9 @@ export default function AuthGate({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (!isLoading) {
+      setChecked(true);
       if (!user) {
         router.push("/sign-in?redirect=" + encodeURIComponent(window.location.pathname));
-      } else {
-        setChecked(true);
       }
     }
   }, [user, isLoading, router]);

@@ -29,6 +29,7 @@ import {
   Underline as UnderlineIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { ImageLightboxProvider } from "@/components/ui/image-lightbox-provider";
 
 const editorRootClass = cn(
   "lesson-inline-editor w-full",
@@ -46,6 +47,8 @@ const editorRootClass = cn(
   "[&_blockquote]:border-l-2 [&_blockquote]:border-[var(--border)] [&_blockquote]:pl-3 [&_blockquote]:text-[var(--text-secondary)]",
   "[&_code]:rounded [&_code]:bg-slate-200/80 [&_code]:px-1.5 [&_code]:py-0.5 [&_code]:text-[0.9em] dark:[&_code]:bg-white/10",
   "[&_pre]:overflow-x-auto [&_pre]:rounded-lg [&_pre]:bg-slate-900 [&_pre]:p-3 [&_pre]:text-sm [&_pre]:text-slate-100",
+  "[&_img]:max-w-full [&_img]:rounded-lg [&_img]:cursor-zoom-in [&_img]:transition-opacity [&_img]:hover:opacity-90",
+  "[&_img]:my-3 [&_img]:block [&_img]:border [&_img]:border-[var(--border)]",
 );
 
 type SlashCmd = { id: string; label: string; run: (ed: Editor) => void; icon: ReactNode };
@@ -403,10 +406,12 @@ export function LessonBodyTiptap({
         </button>
       </FloatingMenu>
 
-      <EditorContent
-        editor={editor}
-        className="border-0 !border-transparent shadow-none ring-0 outline-none focus-within:outline-none [&:focus-within]:ring-0"
-      />
+      <ImageLightboxProvider>
+        <EditorContent
+          editor={editor}
+          className="border-0 !border-transparent shadow-none ring-0 outline-none focus-within:outline-none [&:focus-within]:ring-0"
+        />
+      </ImageLightboxProvider>
 
       {typeof document !== "undefined" && slashPos
         ? createPortal(

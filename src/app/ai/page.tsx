@@ -449,7 +449,7 @@ export default function AIPage() {
                   />
                   <div>
                     <p className="text-lg font-bold text-[var(--text-primary)]">
-                      {language === "ru" ? "Привет, я Zinvest! 👋" : language === "uz" ? "Salom, men Zinvest! 👋" : "Hey, I'm Zinvest! 👋"}
+                      {language === "ru" ? "Привет, я Zinvest!" : language === "uz" ? "Salom, men Zinvest!" : "Hey, I'm Zinvest!"}
                     </p>
                     <p className="mt-1 text-sm text-[var(--text-tertiary)]">
                       {mode === "finance"

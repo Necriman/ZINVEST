@@ -16,6 +16,7 @@ interface AuthContextType {
   isLoading: boolean;
   signIn: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
   signUp: (name: string, email: string, password: string) => Promise<{ success: boolean; error?: string }>;
+  signInWithGoogle: () => Promise<{ success: boolean; error?: string }>;
   signOut: () => void;
   getAllUsers: () => Promise<User[]>;
 }
@@ -75,6 +76,66 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (session) setUser(JSON.parse(session));
     } catch { /* ignore */ }
     setIsLoading(false);
+  }, []);
+
+  // ── Google / OAuth session bridge ──────────────────────────────────────────
+  // When a user returns from Google sign-in, Supabase stores a session in
+  // supabase.auth. We map that session onto our own `users` table so the rest of
+  // the app (admin panel, progress, leaderboards) keeps working unchanged.
+  useEffect(() => {
+    const supabase = getSupabase();
+    if (!supabase) return;
+
+    const handleSession = async (session: { user?: any } | null) => {
+      const su = session?.user;
+      if (!su) return;
+      const email = String(su.email ?? "").toLowerCase().trim();
+      if (!email) return;
+      const meta = su.user_metadata ?? {};
+      const name = meta.full_name || meta.name || email.split("@")[0] || "User";
+      const isAdmin = email === ADMIN_EMAIL;
+
+      try {
+        const { data: existing } = await supabase
+          .from("users")
+          .select("*")
+          .eq("email", email)
+          .maybeSingle();
+
+        let row = existing;
+        if (!existing) {
+          const { data: inserted } = await supabase
+            .from("users")
+            .insert({ id: su.id, name, email, password_hash: "oauth_google", is_admin: isAdmin })
+            .select()
+            .single();
+          row = inserted;
+          if (inserted) {
+            await supabase.from("signups").insert({ user_id: inserted.id, name, email });
+          }
+        }
+
+        const safeUser: User = {
+          id: row?.id ?? su.id,
+          name: row?.name ?? name,
+          email: row?.email ?? email,
+          createdAt: row?.created_at ?? new Date().toISOString(),
+          isAdmin: row?.is_admin ?? isAdmin,
+        };
+        setUser(safeUser);
+        localStorage.setItem(SESSION_KEY, JSON.stringify(safeUser));
+      } catch {
+        const safeUser: User = { id: su.id, name, email, createdAt: new Date().toISOString(), isAdmin };
+        setUser(safeUser);
+        localStorage.setItem(SESSION_KEY, JSON.stringify(safeUser));
+      }
+    };
+
+    supabase.auth.getSession().then(({ data }) => handleSession(data.session));
+    const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (session) handleSession(session);
+    });
+    return () => { sub.subscription.unsubscribe(); };
   }, []);
 
   // ── Sign Up ──────────────────────────────────────────────────────────────
@@ -189,10 +250,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
+  // ── Sign In with Google (OAuth) ────────────────────────────────────────────
+  const signInWithGoogle = useCallback(async () => {
+    const supabase = getSupabase();
+    if (!supabase) {
+      return {
+        success: false,
+        error: "Google sign-in is not configured yet. Add your Supabase keys and enable the Google provider.",
+      };
+    }
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: { redirectTo: `${window.location.origin}/dashboard` },
+    });
+    if (error) return { success: false, error: error.message };
+    return { success: true };
+  }, []);
+
   // ── Sign Out ─────────────────────────────────────────────────────────────
   const signOut = useCallback(() => {
     setUser(null);
     localStorage.removeItem(SESSION_KEY);
+    const supabase = getSupabase();
+    if (supabase) supabase.auth.signOut().catch(() => {});
   }, []);
 
   // ── Get All Users (admin) ────────────────────────────────────────────────
@@ -216,7 +296,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   return (
-    <AuthContext.Provider value={{ user, isLoading, signIn, signUp, signOut, getAllUsers }}>
+    <AuthContext.Provider value={{ user, isLoading, signIn, signUp, signInWithGoogle, signOut, getAllUsers }}>
       {children}
     </AuthContext.Provider>
   );

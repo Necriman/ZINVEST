@@ -1,16 +1,26 @@
-"use client";
+﻿"use client";
 
 import React from 'react';
-import { Twitter, Linkedin, Github, BookOpen } from 'lucide-react';
+import { Instagram, Send, BookOpen } from 'lucide-react';
 import Link from 'next/link';
+import { motion } from 'framer-motion';
 import { useLanguage } from '@/lib/language-context';
+
+const INSTAGRAM_URL = "https://www.instagram.com/zinvest.app?igsh=MTE3cW1ndHI2cnFsbg==";
+const TELEGRAM_URL = "https://t.me/zinvestapp";
 
 const Footer = () => {
   const { t } = useLanguage();
-  
+
   return (
     <footer className="border-t border-[var(--border)] bg-[var(--bg-secondary)] px-4 pb-10 pt-16 sm:px-6 sm:pb-12 sm:pt-24">
-      <div className="mx-auto max-w-7xl">
+      <motion.div
+        className="mx-auto max-w-7xl"
+        initial={{ opacity: 0, y: 20 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true }}
+        transition={{ duration: 0.5 }}
+      >
         <div className="grid grid-cols-1 gap-12 lg:grid-cols-12">
           {/* Brand and Description Info */}
           <div className="lg:col-span-5">
@@ -27,29 +37,25 @@ const Footer = () => {
             </p>
             {/* Social Media Link Icons */}
             <div className="mt-8 flex items-center gap-4">
-              <a 
-                href="https://twitter.com" 
-                target="_blank" 
+              <a
+                href={INSTAGRAM_URL}
+                target="_blank"
                 rel="noopener noreferrer"
+                aria-label="Instagram"
+                title="Instagram"
                 className="flex h-10 w-10 items-center justify-center rounded-full border border-[var(--border)] bg-[var(--bg-primary)] text-[var(--text-muted)] transition-all hover:border-[var(--accent)] hover:bg-[var(--accent-bg)] hover:text-[var(--accent)]"
               >
-                <Twitter className="h-4 w-4" />
+                <Instagram className="h-4 w-4" />
               </a>
-              <a 
-                href="https://linkedin.com" 
-                target="_blank" 
+              <a
+                href={TELEGRAM_URL}
+                target="_blank"
                 rel="noopener noreferrer"
+                aria-label="Telegram"
+                title="Telegram"
                 className="flex h-10 w-10 items-center justify-center rounded-full border border-[var(--border)] bg-[var(--bg-primary)] text-[var(--text-muted)] transition-all hover:border-[var(--accent)] hover:bg-[var(--accent-bg)] hover:text-[var(--accent)]"
               >
-                <Linkedin className="h-4 w-4" />
-              </a>
-              <a 
-                href="https://github.com" 
-                target="_blank" 
-                rel="noopener noreferrer"
-                className="flex h-10 w-10 items-center justify-center rounded-full border border-[var(--border)] bg-[var(--bg-primary)] text-[var(--text-muted)] transition-all hover:border-[var(--accent)] hover:bg-[var(--accent-bg)] hover:text-[var(--accent)]"
-              >
-                <Github className="h-4 w-4" />
+                <Send className="h-4 w-4" />
               </a>
             </div>
           </div>
@@ -68,7 +74,7 @@ const Footer = () => {
                   </Link>
                 </li>
                 <li>
-                  <Link href="/learn" className="flex min-h-10 items-center text-sm font-medium text-[var(--text-tertiary)] transition-colors hover:text-[var(--text-primary)] active:text-[var(--text-primary)] sm:min-h-0">
+                  <Link href="/payment" className="flex min-h-10 items-center text-sm font-medium text-[var(--text-tertiary)] transition-colors hover:text-[var(--text-primary)] active:text-[var(--text-primary)] sm:min-h-0">
                     {t.footer.pricing}
                   </Link>
                 </li>
@@ -87,14 +93,16 @@ const Footer = () => {
               </h4>
               <ul className="space-y-4">
                 <li>
-                  <Link href="/learn" className="flex min-h-10 items-center text-sm font-medium text-[var(--text-tertiary)] transition-colors hover:text-[var(--text-primary)] active:text-[var(--text-primary)] sm:min-h-0">
+                  <a href="#" aria-disabled="true" onClick={(e) => e.preventDefault()} className="flex min-h-10 items-center gap-2 text-sm font-medium text-[var(--text-tertiary)] cursor-not-allowed sm:min-h-0">
                     {t.footer.blog}
-                  </Link>
+                    <span className="rounded-full bg-[var(--accent-bg)] px-1.5 py-0.5 text-[10px] font-medium text-[var(--accent)]">Soon</span>
+                  </a>
                 </li>
                 <li>
-                  <Link href="/learn" className="flex min-h-10 items-center text-sm font-medium text-[var(--text-tertiary)] transition-colors hover:text-[var(--text-primary)] active:text-[var(--text-primary)] sm:min-h-0">
+                  <a href="#" aria-disabled="true" onClick={(e) => e.preventDefault()} className="flex min-h-10 items-center gap-2 text-sm font-medium text-[var(--text-tertiary)] cursor-not-allowed sm:min-h-0">
                     {t.footer.guides}
-                  </Link>
+                    <span className="rounded-full bg-[var(--accent-bg)] px-1.5 py-0.5 text-[10px] font-medium text-[var(--accent)]">Soon</span>
+                  </a>
                 </li>
               </ul>
             </div>
@@ -105,26 +113,14 @@ const Footer = () => {
                 {t.footer.company}
               </h4>
               <ul className="space-y-4">
-                <li>
-                  <Link href="/" className="flex min-h-10 items-center text-sm font-medium text-[var(--text-tertiary)] transition-colors hover:text-[var(--text-primary)] active:text-[var(--text-primary)] sm:min-h-0">
-                    {t.footer.about}
-                  </Link>
-                </li>
-                <li>
-                  <Link href="/" className="flex min-h-10 items-center text-sm font-medium text-[var(--text-tertiary)] transition-colors hover:text-[var(--text-primary)] active:text-[var(--text-primary)] sm:min-h-0">
-                    {t.footer.careers}
-                  </Link>
-                </li>
-                <li>
-                  <Link href="/" className="flex min-h-10 items-center text-sm font-medium text-[var(--text-tertiary)] transition-colors hover:text-[var(--text-primary)] active:text-[var(--text-primary)] sm:min-h-0">
-                    {t.footer.privacy}
-                  </Link>
-                </li>
-                <li>
-                  <Link href="/" className="flex min-h-10 items-center text-sm font-medium text-[var(--text-tertiary)] transition-colors hover:text-[var(--text-primary)] active:text-[var(--text-primary)] sm:min-h-0">
-                    {t.footer.terms}
-                  </Link>
-                </li>
+                {[t.footer.about, t.footer.careers, t.footer.privacy, t.footer.terms].map((label) => (
+                  <li key={label}>
+                    <a href="#" aria-disabled="true" onClick={(e) => e.preventDefault()} className="flex min-h-10 items-center gap-2 text-sm font-medium text-[var(--text-tertiary)] cursor-not-allowed sm:min-h-0">
+                      {label}
+                      <span className="rounded-full bg-[var(--accent-bg)] px-1.5 py-0.5 text-[10px] font-medium text-[var(--accent)]">Soon</span>
+                    </a>
+                  </li>
+                ))}
               </ul>
             </div>
           </div>
@@ -133,10 +129,10 @@ const Footer = () => {
         {/* Footer Bottom Bar */}
         <div className="mt-20 flex flex-col items-center justify-between border-t border-[var(--border)] pt-8 md:flex-row">
           <p className="text-sm text-[var(--text-muted)]">
-            &copy; 2026 Zinvest. {t.footer.rights}
+            &copy; {new Date().getFullYear()} Zinvest. {t.footer.rights}
           </p>
         </div>
-      </div>
+      </motion.div>
     </footer>
   );
 };

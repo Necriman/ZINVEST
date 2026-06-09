@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
-import { Globe, ChevronDown, Menu, X, Check, LogOut, Shield, User, Settings, BarChart3, Wallet, Sun, Moon, Instagram, Send, Flame } from "lucide-react";
+import { ChevronDown, Menu, X, Check, LogOut, Shield, User, Settings, BarChart3, Wallet, Sun, Moon, Instagram, Send, Flame } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
@@ -14,11 +14,13 @@ import { useReducedMotion } from "@/lib/motion";
 import { useZiners } from "@/lib/ziners-context";
 import { StreakCelebration } from "@/components/streak-celebration";
 import { StreakCalendar } from "@/components/streak-calendar";
+import { ZinvestMark } from "@/components/brand/zinvest-logo";
+import { Flag } from "@/components/brand/flag";
 
-const LANGUAGES: { code: Language; label: string; flag: string }[] = [
-  { code: "en", label: "English", flag: "🇺🇸" },
-  { code: "ru", label: "Русский", flag: "🇷🇺" },
-  { code: "uz", label: "O'zbek", flag: "🇺🇿" },
+const LANGUAGES: { code: Language; label: string }[] = [
+  { code: "en", label: "English" },
+  { code: "ru", label: "Русский" },
+  { code: "uz", label: "O'zbek" },
 ];
 const INSTAGRAM_URL = "https://www.instagram.com/zinvest.app?igsh=MTE3cW1ndHI2cnFsbg==";
 const TELEGRAM_URL = "https://t.me/zinvestapp";
@@ -159,15 +161,9 @@ const Navigation = () => {
           >
             {/* Logo + social */}
             <div className="flex min-w-0 shrink items-center gap-2 sm:gap-3">
-              <Link href="/" className="group min-h-11 min-w-0 shrink flex items-center touch-manipulation active:opacity-90">
-                <Image
-                  src="/icon-192.png"
-                  alt="Zinvest"
-                  width={32}
-                  height={32}
-                  priority
-                  className="h-8 w-8 rounded-xl transition-transform group-hover:scale-[1.02]"
-                />
+              <Link href="/" className="group min-h-11 min-w-0 shrink flex items-center gap-2 touch-manipulation active:opacity-90">
+                <ZinvestMark className="h-7 w-7 transition-transform group-hover:scale-[1.04]" />
+                <span className="hidden text-[16px] font-bold tracking-tight text-[var(--text-primary)] sm:inline">Zinvest</span>
               </Link>
               <a
                 href={INSTAGRAM_URL}
@@ -249,8 +245,8 @@ const Navigation = () => {
                   onClick={() => setLangDropdownOpen(!langDropdownOpen)}
                   className="btn-interactive flex items-center gap-1.5 rounded-full px-3 py-2 text-sm font-medium text-[var(--text-nav)] transition-colors hover:text-[var(--text-nav-active)] hover:bg-[var(--accent-bg)]"
                 >
-                  <Globe className="h-4 w-4" />
-                  <span>{currentLang.flag} {currentLang.code.toUpperCase()}</span>
+                  <Flag code={currentLang.code} className="h-4 w-4 rounded-full ring-1 ring-[var(--border)]" />
+                  <span>{currentLang.code.toUpperCase()}</span>
                   <ChevronDown className={`h-3.5 w-3.5 transition-transform ${langDropdownOpen ? "rotate-180" : ""}`} />
                 </button>
 
@@ -275,8 +271,8 @@ const Navigation = () => {
                             language === lang.code ? "text-[var(--text-nav-active)]" : "text-[var(--text-secondary)]"
                           }`}
                         >
-                          <span className="flex items-center gap-2">
-                            <span>{lang.flag}</span>
+                          <span className="flex items-center gap-2.5">
+                            <Flag code={lang.code} className="h-4 w-4 rounded-full ring-1 ring-[var(--border)]" />
                             <span>{lang.label}</span>
                           </span>
                           {language === lang.code && <Check className="h-4 w-4" />}
@@ -517,7 +513,7 @@ const Navigation = () => {
                                 : "border-slate-200 bg-slate-50 text-slate-600 active:bg-slate-100 dark:border-white/10 dark:bg-[#0a0f1c]/5 dark:text-slate-300 dark:active:bg-[#0a0f1c]/10"
                             }`}
                           >
-                            <span>{lang.flag}</span>
+                            <Flag code={lang.code} className="h-4 w-4 rounded-full" />
                             <span>{lang.code.toUpperCase()}</span>
                           </button>
                         ))}

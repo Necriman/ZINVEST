@@ -77,9 +77,9 @@ export function StreakCelebration() {
                 initial={{ opacity: 0, y: 8 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.35 }}
-                className="text-xl font-bold text-slate-800 dark:text-white"
+                className="flex items-center justify-center gap-1.5 text-xl font-bold text-slate-800 dark:text-white"
               >
-                Day Streak! 🔥
+                Day Streak! <Flame className="h-5 w-5 text-orange-500" />
               </motion.p>
               <motion.p
                 initial={{ opacity: 0 }}

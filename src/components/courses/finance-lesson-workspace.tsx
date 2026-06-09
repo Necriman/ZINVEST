@@ -5,14 +5,13 @@ import Link from "next/link";
 import { useParams, usePathname, useRouter, useSearchParams } from "next/navigation";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
-import { ArrowLeft, Expand, MessageCircle, Mic, Minimize, Paperclip, Send, StickyNote, Zap } from "lucide-react";
+import { ArrowLeft, Expand, MessageCircle, Mic, Minimize, Paperclip, Send, Zap } from "lucide-react";
 import Image from "next/image";
 import { stripHtml } from "@/lib/strip-html";
 import { useLanguage } from "@/lib/language-context";
 import AuthGate from "@/components/auth-gate";
 import Navigation from "@/components/sections/navigation";
 import { InteractiveLessonBody } from "@/components/lesson/interactive-lesson-body";
-import { NotionNotesEditor } from "@/components/lesson/notion-notes-editor";
 import { getFinanceStructuredLesson } from "@/lib/lesson-content/finance-fundamentals";
 import { blocksToPlainText } from "@/lib/lesson-blocks";
 import {
@@ -96,7 +95,7 @@ export function FinanceLessonWorkspace() {
   const cp = t.coursePage;
   const [insufficientCoinsWs, setInsufficientCoinsWs] = useState(false);
 
-  const [notesHtml, setNotesHtml] = useState("");
+  const notesHtml = "";
   const [lessonSnapshot, setLessonSnapshot] = useState({ title: "", plainBody: "" });
   const [chatInput, setChatInput] = useState("");
   const [chatLoading, setChatLoading] = useState(false);
@@ -502,16 +501,6 @@ export function FinanceLessonWorkspace() {
             {financeKeyIdea.keyIdeaRest}
           </p>
         </div>
-        <div id="zinvest-lesson-notes" className="mt-8 scroll-mt-24 border-t border-[var(--border)] pt-6">
-          <span className="text-xs font-semibold text-[var(--text-muted)]">{lw.yourNotes}</span>
-          <NotionNotesEditor
-            lessonId={lessonId}
-            storageKeyPrefix={NOTES_PREFIX}
-            legacyPlainStorageKeyPrefix={NOTES_PREFIX}
-            placeholder={lw.notesPlaceholder}
-            onHtmlChange={setNotesHtml}
-          />
-        </div>
         <div className="mt-8 flex flex-wrap gap-2">
           <button
             type="button"
@@ -549,14 +538,6 @@ export function FinanceLessonWorkspace() {
               {t.trackPage.backToCourses} · {lw.tabLesson} 1
             </Link>
           )}
-          <button
-            type="button"
-            onClick={() => document.getElementById("zinvest-lesson-notes")?.scrollIntoView({ behavior: "smooth" })}
-            className="inline-flex items-center gap-1 rounded-xl border border-[var(--border)] px-4 py-2 text-sm text-[var(--text-secondary)] md:hidden"
-          >
-            <StickyNote className="h-4 w-4" />
-            {lw.stickyJumpToNotes}
-          </button>
         </div>
       </div>
     </div>

@@ -8,6 +8,11 @@ import { AuthProvider } from "@/lib/auth-context";
 import { AnalyticsProvider } from "@/lib/analytics-context";
 import { PwaInstallClient } from "@/components/pwa/pwa-install-client";
 import { ThemeProvider } from "@/components/theme-provider";
+import { ScrollProgress } from "@/components/motion/scroll-progress";
+import { PageTransition } from "@/components/motion/page-transition";
+import { ScrollToTop } from "@/components/ui/scroll-to-top";
+import { ZinersProvider } from "@/lib/ziners-context";
+import { IntroExperience } from "@/components/intro-experience";
 
 export const metadata: Metadata = {
   title: "Zinvest — Your AI Financial Assistant",
@@ -68,10 +73,15 @@ export default function RootLayout({
         <LanguageProvider>
           <AuthProvider>
             <ThemeProvider>
-              <AnalyticsProvider>
-                {children}
-                <PwaInstallClient />
-              </AnalyticsProvider>
+              <ZinersProvider>
+                <AnalyticsProvider>
+                  <IntroExperience />
+                  <ScrollProgress />
+                  <PageTransition>{children}</PageTransition>
+                  <ScrollToTop />
+                  <PwaInstallClient />
+                </AnalyticsProvider>
+              </ZinersProvider>
             </ThemeProvider>
           </AuthProvider>
         </LanguageProvider>

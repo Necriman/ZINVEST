@@ -6,213 +6,187 @@
 import type { StructuredLesson } from "@/lib/lesson-blocks";
 
 export const FINANCE_EN_LESSON_1: StructuredLesson = {
-  "title": "What Is Finance?",
-  "content": [
+  title: "What Is Finance?",
+  content: [
+    // ── INTRODUCTION ──────────────────────────────────────────────
     {
-      "type": "heading",
-      "text": "1.1 Definition of Finance"
+      type: "heading",
+      text: "What Is Finance?",
     },
     {
-      "type": "paragraph",
-      "text": "The word finance traces back to the medieval Latin word finis, meaning 'end' or 'settlement' — specifically the settling of a debt. Over centuries it evolved into the Old French finance, meaning the management of money. Today, finance has grown into one of the most expansive fields of human knowledge."
+      type: "paragraph",
+      text: "Finance is everywhere — yet most people never formally study it. Every salary earned, loan taken, investment made, or tax paid involves a financial decision. This unit builds your foundation: what finance actually is, how it divides into three major branches, and why developing financial literacy is one of the most practical skills you can acquire.",
     },
     {
-      "type": "heading",
-      "text": "Formal Definition"
+      type: "image",
+      src: "/images/unit1/page_03.jpg",
+      alt: "Unit 1 overview — What Is Finance?",
+    },
+
+    // ── 1.1 DEFINITION ────────────────────────────────────────────
+    {
+      type: "heading",
+      text: "1.1 The Formal Definition",
     },
     {
-      "type": "paragraph",
-      "text": "Finance is the discipline that studies how individuals, businesses, and governments raise, allocate, invest, and manage monetary resources over time, taking into account the risks and uncertainties involved. Let's break that definition into its four key actions: Raise Obtaining money in the first place. A company might issue shares or borrow from a bank. An individual might earn a salary or take out a student loan. A government might levy taxes or sell bonds. Without raising capital, no project can begin. Allocate Deciding where to put the money. Should this $1 million go into a new factory, into hiring staff, or into financial instruments? Allocation decisions determine whether resources flow to their most productive uses or get wasted. This is where most of the intellectual work in finance happens. Invest Committing money today in the expectation of receiving more money in the future. Investment always involves trade-offs: spending now vs. receiving later, and certainty now vs. uncertainty later. Virtually every financial decision is, at its core, an investment decision. Manage Overseeing money on an ongoing basis — monitoring performance, controlling risk, adjusting strategies when conditions change. Finance is not a one-time decision; it is a continuous process of monitoring and optimization. The Central Question Finance Tries to Answer At the deepest level, every topic in this course — valuation, capital markets, corporate decisions, personal investing — is an attempt to answer one fundamental question:"
+      type: "paragraph",
+      text: "The word finance traces back to the medieval Latin finis — meaning \"end\" or \"settlement\", specifically the settling of a debt. Over centuries it became the Old French finance, referring to the management of money. Today, finance is formally defined as:\n\nThe discipline that studies how individuals, businesses, and governments raise, allocate, invest, and manage monetary resources over time — under conditions of risk and uncertainty.",
     },
     {
-      "type": "heading",
-      "text": "Figure 1.1 — Finance sits at the intersection of scarcity, time, risk, and value"
+      type: "paragraph",
+      text: "That definition contains four key actions every financial decision involves:\n• Raise — obtaining capital (salary, loans, taxes, share issuance)\n• Allocate — deciding where to direct it (factory, staff, savings)\n• Invest — committing money today expecting more in return tomorrow\n• Manage — monitoring performance and adjusting as conditions change\n\nThe phrase \"over time\" and \"under uncertainty\" is what makes finance complex and intellectually rich.",
     },
     {
-      "type": "heading",
-      "text": "The Central Question"
+      type: "image",
+      src: "/images/unit1/page_05.jpg",
+      alt: "The four key financial actions — raise, allocate, invest, manage",
     },
     {
-      "type": "paragraph",
-      "text": "Given that money is scarce and the future is uncertain, where should we put our money TODAY in order to create the most VALUE over time? Every financial decision — from choosing a savings account, to building a factory, to designing a government pension system — is an attempt to answer this question. What Finance Is NOT Students often confuse finance with related activities. Let's be clear about what finance is not — and why those distinctions matter:"
+      type: "paragraph",
+      text: "📌 Example: You have $5,000 in savings.\n→ Option A: Savings account at 2% → $5,100 after one year\n→ Option B: Pay off a credit card charging 18% interest → saves $900 (equivalent to earning 18% risk-free)\n→ Option C: Index fund with expected 10% return → ~$5,500, but with market risk\n\nChoosing between these IS finance — raising, allocating, investing, and managing, all in one decision.",
+    },
+
+    // ── THE CENTRAL QUESTION ──────────────────────────────────────
+    {
+      type: "heading",
+      text: "The Central Question Finance Answers",
     },
     {
-      "type": "heading",
-      "text": "Finance is NOT just about making money"
+      type: "paragraph",
+      text: "Every topic in this course — valuation, capital markets, corporate decisions, personal investing — is an attempt to answer one fundamental question:\n\n\"Given that money is scarce and the future is uncertain, where should we put our money TODAY to create the most VALUE over time?\"\n\nFrom choosing a savings account to designing a national pension system, every financial decision is an attempt to answer exactly this.",
     },
     {
-      "type": "paragraph",
-      "text": "Finance is a tool for making decisions — sometimes the right financial decision is to NOT invest, to return cash to shareholders, or to take on debt to fund social programs. The goal is optimal allocation, not maximum accumulation."
+      type: "paragraph",
+      text: "Finance is often confused with related fields. Three important distinctions:\n• Finance ≠ Accounting — accounting records the past; finance uses that data to decide the future\n• Finance ≠ Just for the wealthy — anyone who earns, saves, or borrows is already practising personal finance\n• Finance ≠ Pure mathematics — it requires quantitative skill AND qualitative judgment; the same data can lead two analysts to opposite conclusions",
     },
     {
-      "type": "heading",
-      "text": "Finance is NOT accounting"
+      type: "image",
+      src: "/images/unit1/page_07.jpg",
+      alt: "The central question of finance — value over time under uncertainty",
+    },
+
+    // ── 1.2 THE THREE PILLARS ─────────────────────────────────────
+    {
+      type: "heading",
+      text: "1.2 The Three Pillars of Finance",
     },
     {
-      "type": "paragraph",
-      "text": "Accounting records what already happened. Finance uses that information to decide what to do next. An accountant tells you your company made $2M profit last year. A financial analyst tells you whether to reinvest that profit or return it to investors."
+      type: "paragraph",
+      text: "Finance is a vast discipline, but all of it can be organized into three broad areas called the three pillars. Each pillar differs in who makes the decision, what resources are managed, and what goals are being pursued. Understanding this structure gives you a mental map of the entire field before diving into details.",
     },
     {
-      "type": "heading",
-      "text": "Finance is NOT just for the wealthy"
+      type: "image",
+      src: "/images/unit1/page_09.jpg",
+      alt: "The three pillars of finance — personal, corporate, and public",
+    },
+
+    // ── PILLAR 1: PERSONAL FINANCE ────────────────────────────────
+    {
+      type: "heading",
+      text: "Pillar 1 — Personal Finance",
     },
     {
-      "type": "paragraph",
-      "text": "Every person who earns income, pays rent, borrows money, or saves for the future is practicing personal finance — whether consciously or not. Understanding finance helps ordinary people make dramatically better decisions with their money."
+      type: "paragraph",
+      text: "Personal finance covers the financial decisions of individuals and households. It is the most immediately relevant area for most learners — every working adult navigates personal finance whether they study it formally or not. The decisions here shape quality of life more directly than almost any other set of skills.",
     },
     {
-      "type": "heading",
-      "text": "Finance is NOT purely mathematical"
+      type: "paragraph",
+      text: "Six key areas of personal finance:\n• Budgeting & Cash Flow — tracking income vs. expenses; building an emergency fund\n• Saving & Investing — growing wealth through compound interest over time\n• Debt Management — understanding the true cost of borrowing (APR, fees, opportunity cost)\n• Insurance — transferring catastrophic risks: health, life, property, disability\n• Retirement Planning — accumulating enough to fund consumption after you stop working\n• Tax Efficiency — legally reducing your tax burden through smart account and investment choices",
     },
     {
-      "type": "paragraph",
-      "text": "While finance uses mathematics, its core is judgment under uncertainty. The same numbers can lead different analysts to different conclusions. Finance requires quantitative skill AND qualitative wisdom. /n WORKED EXAMPLE — Finance in Everyday Life You have $5,000 in savings. You face three choices: Option A: Keep it in a savings account earning 2% per year → $5,100 after one year Option B: Pay off a credit card charging 18% interest → saves $900 in interest = equivalent to earning 18% Option C: Invest in an index fund with expected 10% return → ~$5,500 after one year, but with risk This IS finance. You are raising (your savings), allocating (choosing between options), investing (Options A and C), and managing (monitoring performance). The 'right' answer depends on your risk tolerance, time horizon, and other debts — exactly the kind of analysis finance teaches you to do."
+      type: "image",
+      src: "/images/unit1/page_11.jpg",
+      alt: "Personal finance areas — budgeting, saving, debt, retirement",
     },
     {
-      "type": "heading",
-      "text": "1.2 The Three Pillars of Finance"
+      type: "paragraph",
+      text: "The impact is measurable. A 2023 OECD study found that financially literate households had 25–40% higher net worth than demographically similar households with low financial literacy. Understanding personal finance is not a luxury — it is a direct, quantifiable wealth-building advantage.",
+    },
+
+    // ── PILLAR 2: CORPORATE FINANCE ───────────────────────────────
+    {
+      type: "heading",
+      text: "Pillar 2 — Corporate Finance",
     },
     {
-      "type": "paragraph",
-      "text": "Finance is a vast discipline, but its entire scope can be organized into three broad areas, often called the three pillars. These pillars differ in who is making the decision, what resources they are managing, and what goals they are trying to achieve."
+      type: "paragraph",
+      text: "Corporate finance focuses on financial decisions made by businesses. Its central goal is to maximize the value of the firm for its owners (shareholders). This pillar is the primary focus of most finance careers, MBA programmes, and advanced courses — and it requires mastering the tools introduced in this unit.",
     },
     {
-      "type": "heading",
-      "text": "Figure 1.2 — The Three Pillars of Finance and their key activities"
+      type: "paragraph",
+      text: "Three core questions drive all of corporate finance:\n• Capital Budgeting (the investment decision) — should we build the factory, acquire the competitor, or launch the product line?\n• Capital Structure (the financing decision) — should we fund it with debt, equity, or retained earnings?\n• Dividend Policy (the distribution decision) — should we return cash to shareholders or reinvest it for growth?\n\nEvery major corporate decision maps to one of these three.",
     },
     {
-      "type": "paragraph",
-      "text": "Pillar 1: Personal Finance Personal finance covers the financial decisions of individuals and households. It is the most immediately relevant area for most students, because every working adult must navigate personal finance decisions whether they study it or not. • Budgeting & Cash Flow Management: Tracking income and expenses, ensuring spending does not exceed income, and building a financial cushion (emergency fund). Without this foundation, all other personal finance decisions become unstable. • Saving & Investing: Setting aside a portion of income to grow wealth over time. The key insight from finance: starting early matters enormously. $1,000 invested at age 20 at 8% per year becomes $21,700 by age 60. The same $1,000 invested at age 40 becomes only $4,660. This is the power of compound interest. • Debt Management: Understanding the true cost of borrowing — not just the headline interest rate, but the effective annual rate, fees, and opportunity cost. A 20% credit card balance is almost always more urgent to pay off than almost any investment opportunity. • Insurance & Risk Management: Finance teaches that risk can be transferred (through insurance), reduced (through diversification), or accepted. Personal finance applies this to health, life, property, and disability insurance — protecting against catastrophic losses. • Retirement Planning: The long-term challenge of accumulating enough wealth to fund consumption after you stop working. Finance provides the tools: retirement accounts, pension valuation, safe withdrawal rates, and Social Security optimization. • Tax Efficiency: Understanding how different financial decisions are taxed — and legally structuring your finances to minimize tax burden. Tax-advantaged accounts (401k, IRA, ISA) can significantly boost lifetime wealth at zero extra risk."
+      type: "image",
+      src: "/images/unit1/page_12.jpg",
+      alt: "Corporate finance — capital budgeting, capital structure, dividend decisions",
     },
     {
-      "type": "heading",
-      "text": "Real-World Impact of Personal Finance Knowledge"
+      type: "paragraph",
+      text: "📌 Example: Apple Inc.\n→ Capital Budgeting: Invested billions developing the iPhone — justified by expected future returns\n→ Capital Structure: Later borrowed cheaply to buy back shares — an optimal debt decision given low interest rates\n→ Dividend Policy: Paid no dividends during growth years; introduced buybacks once growth slowed\n\nEach decision required exactly the analysis taught in corporate finance.",
+    },
+
+    // ── PILLAR 3: PUBLIC FINANCE ──────────────────────────────────
+    {
+      type: "heading",
+      text: "Pillar 3 — Public Finance",
     },
     {
-      "type": "paragraph",
-      "text": "Research consistently shows that individuals with basic financial literacy accumulate significantly more wealth by retirement, carry less high-interest debt, are more likely to invest in diversified portfolios, and make better pension choices. A 2023 OECD study found that financially literate households had, on average, 25-40% higher net worth than demographically similar households with low financial literacy. Pillar 2: Corporate Finance Corporate finance focuses on the financial decisions made by businesses and corporations. It is the primary focus of most finance courses and careers. The central goal of corporate finance is to maximize the value of the firm for its owners (shareholders). • Capital Budgeting — The Investment Decision: Should the firm build a new factory? Acquire a competitor? Launch a new product line? Capital budgeting is the process of evaluating long-term investment projects using tools like Net Present Value (NPV), Internal Rate of Return (IRR), and Payback Period. Getting this right is critical — bad investments destroy enormous amounts of value. • Capital Structure — The Financing Decision: Once the firm decides to invest, how should it fund that investment? It can issue shares (equity), borrow money (debt), or use retained earnings. The mix of debt and equity — the 'capital structure' — affects the firm's risk, cost of capital, and flexibility. Too much debt can lead to bankruptcy; too little means leaving valuable tax benefits on the table. • Working Capital Management: Day-to-day financial management: collecting receivables, managing inventory, timing payments to suppliers, and maintaining adequate cash balances. Poor working capital management kills profitable businesses — a company can be highly profitable on paper but fail because it runs out of cash. • Dividend Policy: Should the firm return cash to shareholders as dividends, buy back shares, or reinvest the cash in the business? This seemingly simple question has deep implications for shareholder returns, tax efficiency, and signals sent to the market about future prospects. • Mergers, Acquisitions & Corporate Restructuring: Should the firm grow by acquiring another company? Should it sell a division, go private, or restructure its debt? These large-scale decisions can either create or destroy enormous value, and they require sophisticated financial analysis. /n WORKED EXAMPLE — Corporate Finance in Action: Apple Inc. Consider how Apple applies corporate finance: Capital Budgeting: Apple decided to invest billions in developing the iPhone — an NPV analysis must have suggested enormous future returns. Capital Structure: Apple historically held massive cash reserves (low debt). After investor pressure, it began borrowing cheaply to fund share buybacks — an optimal capital structure decision given low interest rates. Dividend Policy: Apple paid no dividend for years (reinvesting in growth). Once growth slowed, it introduced dividends and buybacks to return cash to shareholders. Each of these decisions required exactly the analysis taught in corporate finance. Pillar 3: Public Finance Public finance applies financial principles to governments and public institutions. While less glamorous than corporate finance, public finance decisions affect every citizen. Government financial decisions determine the quality of schools, roads, healthcare, national security, and social safety nets. • Taxation — Revenue Generation: How should governments raise money? Income taxes, sales taxes, property taxes, corporate taxes, and capital gains taxes all have different incentive effects and distributional consequences. Public finance analyzes the trade-offs: efficiency (minimizing distortions), fairness (who bears the burden?), and revenue adequacy. • Government Spending & Budgeting: How should limited tax revenue be allocated across defense, education, healthcare, infrastructure, and social programs? Budget decisions involve difficult trade-offs and reflect societal values as much as financial analysis. Public finance provides tools like cost-benefit analysis to evaluate spending programs objectively. • Government Debt Management: When governments spend more than they collect in taxes, they must borrow — issuing government bonds (like US Treasuries or UK Gilts). Public finance analyzes sustainable debt levels, the true cost of government borrowing, and the risk of sovereign default. These decisions affect interest rates for everyone in the economy. • Social Insurance & Pension Systems: Governments run massive financial programs — Social Security in the US, NHS in the UK, public pension funds. These systems involve enormous long-term financial commitments and require sophisticated actuarial and financial analysis to remain solvent. • Monetary & Fiscal Policy Interaction: Central banks (like the Federal Reserve) use interest rates and money supply to influence economic activity. Public finance studies how government spending and tax policy interact with monetary policy — and how to avoid destabilizing the economy. Dimension Personal Finance Corporate Finance Public Finance Decision Maker Individuals & families Managers & CFOs Government officials Primary Goal Personal wealth & security Maximize shareholder value Public welfare & social goals Main Decisions Save, invest, insure, borrow Invest, fund, return cash Tax, spend, borrow, redistribute Time Horizon Lifetime (20–50 years) Project life (1–30 years) Generational (decades to centuries) Success Metric Net worth, financial security Stock price, NPV, ROIC GDP growth, employment, equality Accountability Self / family Shareholders & board Voters & citizens"
+      type: "paragraph",
+      text: "Public finance applies financial principles to governments and public institutions. It determines the quality of schools, roads, healthcare, and social safety nets. While less prominent than corporate finance in media coverage, public finance decisions affect every citizen and can shape entire economies for generations.",
     },
     {
-      "type": "heading",
-      "text": "1.3 Why Finance Matters"
+      type: "paragraph",
+      text: "Four core areas of public finance:\n• Taxation — raising revenue (income, sales, property taxes) while balancing efficiency and fairness\n• Government Spending — allocating limited tax revenue across defence, education, healthcare, and infrastructure\n• Government Debt — borrowing via bonds when spending exceeds taxes; analysing sustainable debt levels\n• Social Insurance — managing pension funds, healthcare systems, and safety nets at national scale\n\nAll four require the same present-value and allocation thinking as personal and corporate finance.",
     },
     {
-      "type": "paragraph",
-      "text": "A common reaction among beginners is: 'Finance is for bankers and traders — why should I care?' This section answers that question comprehensively. Finance is one of the most universally applicable intellectual tools you can develop, with direct impact on your wealth, career, and ability to understand the world."
+      type: "image",
+      src: "/images/unit1/page_14.jpg",
+      alt: "Public finance — taxation, spending, and debt management",
+    },
+
+    // ── 1.3 WHY FINANCE MATTERS ───────────────────────────────────
+    {
+      type: "heading",
+      text: "1.3 Why Finance Matters",
     },
     {
-      "type": "heading",
-      "text": "Figure 1.3 — Five dimensions where finance knowledge creates measurable advantages"
+      type: "paragraph",
+      text: "A common beginner reaction: \"Finance is for bankers — why should I care?\" The answer: finance is one of the most universally applicable intellectual tools you can develop. It has direct, measurable impact on your personal wealth, your career trajectory, your business outcomes, and your ability to understand events in the world around you.",
     },
     {
-      "type": "paragraph",
-      "text": "1. Financial Literacy Directly Builds Personal Wealth The Compound Interest Miracle The single most important financial concept for personal wealth is compound interest — earning returns on your returns. Albert Einstein reportedly called it 'the eighth wonder of the world.' Here is why: $10,000 invested at 8% per year becomes $46,610 in 20 years, $100,627 in 30 years, and $217,245 in 40 years. The person who starts saving at 22 vs. 32 ends up with more than twice as much at retirement — for the same total amount invested. Avoiding Costly Mistakes Financial illiteracy is expensive. People who don't understand compound interest pay the maximum interest on credit cards. People who don't understand diversification put all their savings in one stock (or worse, their employer's stock). People who don't understand insurance buy unnecessary products or underinsure catastrophic risks. Each of these mistakes can cost tens of thousands of dollars over a lifetime. Understanding True Investment Returns Finance teaches you to evaluate investment opportunities critically. 'Our fund returned 15% last year!' sounds impressive — until you learn that the benchmark index returned 18%, the fund charged 2% in fees, and the risk level was triple the market. Real financial literacy means understanding risk-adjusted, after-fee, after-tax returns. 2. Finance Is Essential for Business Success Cash is King — Even for Profitable Companies Most small businesses that fail are actually profitable on an accounting basis — they just run out of cash. Finance teaches the critical difference between profit (an accounting concept) and cash flow (the actual money available to pay bills). A business can show a $500,000 profit on paper while being unable to make payroll if customers haven't paid their invoices and the bank has stopped lending. The Cost of Capital — The Hidden Filter Every investment a business makes must clear a hurdle: the cost of capital. If your business's cost of capital is 12% (what investors could earn elsewhere at similar risk), then any project returning less than 12% is actually destroying value, even if it's 'profitable.' Finance gives managers the tools to identify which decisions create vs. destroy value. Raising Capital at the Right Time Companies that understand finance raise capital proactively — when markets are favorable and they have negotiating leverage. Companies that wait until they desperately need money are forced to accept terrible terms. The 2020 COVID pandemic showed this clearly: well-financed companies survived and even thrived; poorly capitalized ones failed. 3. Finance Helps You Understand the World Making Sense of Economic Events The 2008 financial crisis. The dot-com bubble. Hyperinflation in Venezuela. The surge in interest rates in 2022–2023. Bitcoin's price swings. All of these events are fundamentally financial — caused by financial decisions, analyzable with financial tools. Without financial literacy, these events seem mysterious and frightening. With it, you can understand their causes and consequences. Evaluating News and Policy Claims Politicians and media regularly make financial claims that require critical evaluation. 'The national debt is unsustainable.' 'This tax cut will pay for itself.' 'Cryptocurrency will replace traditional money.' Finance gives you the intellectual tools to evaluate these claims, distinguish signal from noise, and form well-grounded opinions. Global Interconnection Modern economies are financially interconnected in ways that would have been unimaginable 50 years ago. A banking crisis in Greece affects stock markets in Tokyo. A Federal Reserve rate decision moves currencies in Brazil. Finance explains these connections and why they exist. 4. Finance Knowledge Accelerates Careers Universal Applicability Across Industries Finance skills are valued in every industry — not just banking. A marketing manager who can build a business case, calculate campaign ROI, and understand P&L; statements advances faster than one who cannot. A doctor who understands healthcare finance can run a more effective practice. An engineer who understands project finance can move into leadership roles that pure technical roles cannot access. The Language of Business Finance is the universal language of business. Regardless of your functional specialty, you will eventually interact with financial stakeholders — boards, investors, lenders, or senior executives who think in financial terms. Speaking this language fluently is a career differentiator. Entrepreneurship Building a business is, at its core, a financial exercise. Entrepreneurs who understand unit economics, burn rate, customer lifetime value, and funding strategy build more sustainable businesses and are far more attractive to investors."
+      type: "image",
+      src: "/images/unit1/page_15.jpg",
+      alt: "Five dimensions where financial knowledge creates measurable advantages",
     },
     {
-      "type": "heading",
-      "text": "Key Takeaway for 1.3"
+      type: "paragraph",
+      text: "Financial literacy builds personal wealth primarily through compound interest — often called the eighth wonder of the world. The numbers make the case:\n• $10,000 at 8%/year → $46,610 after 20 years · $100,627 after 30 years · $217,245 after 40 years\n• Starting to invest at age 22 vs. 32 results in more than twice the retirement wealth — for the same total amount invested\n\nThe single most powerful financial decision you can make is to start early.",
     },
     {
-      "type": "paragraph",
-      "text": "Finance is not a specialist skill reserved for Wall Street. It is a fundamental life skill — as important as reading or basic mathematics — that directly affects your wealth, career options, business outcomes, and civic understanding. The earlier you develop financial literacy, the more compounding time it has to work in your favor."
+      type: "paragraph",
+      text: "📌 Example: The Cost of Starting Late\n→ Person A: Invests $2,000/year from ages 22–32, then stops — total invested: $20,000\n→ Person B: Invests $2,000/year from ages 32–62 — total invested: $60,000\n→ Both earn 8% compound interest per year\n\nAt age 62: Person A has ~$290,000. Person B has ~$227,000.\nPerson B invested 3× as much money — and still ended up with less. Time beats amount.",
     },
     {
-      "type": "heading",
-      "text": "1.4 Finance vs. Economics vs. Accounting"
+      type: "paragraph",
+      text: "Finance matters far beyond personal savings:\n• Business: Most small business failures are profitable on paper — they fail due to poor cash flow management. Finance teaches this critical distinction between profit and cash.\n• Career: Finance skills are valued in every industry. Managers who speak the language of ROI, NPV, and cost of capital advance faster into leadership roles.\n• Civic understanding: The 2008 crisis, inflation surges, and government debt debates are all fundamentally financial events — understanding them is a form of informed citizenship.",
     },
     {
-      "type": "paragraph",
-      "text": "Many students enter finance courses confused about how it relates to the two disciplines it most resembles: economics and accounting. Understanding these distinctions is not just academic — it tells you how to think about financial problems and which tools to use."
+      type: "image",
+      src: "/images/unit1/page_19.jpg",
+      alt: "Finance skills accelerate careers across every industry",
+    },
+
+    // ── KEY TAKEAWAY ──────────────────────────────────────────────
+    {
+      type: "heading",
+      text: "Key Takeaway",
     },
     {
-      "type": "heading",
-      "text": "Figure 1.4 — How Finance, Economics, and Accounting differ in focus and orientation"
+      type: "paragraph",
+      text: "Finance is not a specialist skill reserved for Wall Street. It is a fundamental life skill — as important as basic mathematics — that directly affects your wealth, career options, business outcomes, and civic understanding.\n\nThe three pillars (personal, corporate, public) all share one goal: optimal allocation of scarce resources over time under uncertainty. That is the whole discipline in one sentence. Everything in this course is a tool for doing that better.",
     },
-    {
-      "type": "paragraph",
-      "text": "Finance and Economics: Key Similarities and Differences The parent discipline of finance. Economics studies how societies allocate scarce resources across unlimited competing uses. It operates at two levels:"
-    },
-    {
-      "type": "heading",
-      "text": "Microeconomics"
-    },
-    {
-      "type": "paragraph",
-      "text": "Studies decisions by individual agents — consumers, firms, markets. It develops the theory of supply and demand, utility maximization, game theory, and market structure. Finance borrows heavily from microeconomics: the theory of the firm, rational expectations, and market efficiency all have microeconomic roots."
-    },
-    {
-      "type": "heading",
-      "text": "Macroeconomics"
-    },
-    {
-      "type": "paragraph",
-      "text": "Studies the economy as a whole — GDP, inflation, unemployment, monetary policy, and fiscal policy. Finance uses macroeconomic inputs constantly: interest rates (set by central banks), inflation (affects real returns), GDP growth (affects corporate revenue forecasts), and currency movements (affects international investments)."
-    },
-    {
-      "type": "heading",
-      "text": "Where Economics Ends and Finance Begins"
-    },
-    {
-      "type": "paragraph",
-      "text": "Economics tends to describe and explain. Finance prescribes and decides. An economist might study WHY interest rates affect investment. A financial manager uses that knowledge to decide WHAT RATE to use when discounting cash flows. Finance is economics applied to investment decisions under uncertainty. Finance and Accounting: Key Similarities and Differences Finance's closest partner and primary data source. Accounting is the system for recording, classifying, and reporting financial transactions. It produces the three core financial statements that finance then analyzes:"
-    },
-    {
-      "type": "heading",
-      "text": "The Income Statement (Profit & Loss)"
-    },
-    {
-      "type": "paragraph",
-      "text": "Shows revenues, expenses, and profit over a period. Finance uses this to understand earning power, profit margins, and trends. But finance is critical of accounting profit: it can be manipulated through timing, depreciation methods, and revenue recognition. Finance prefers cash flow as a measure of true performance."
-    },
-    {
-      "type": "heading",
-      "text": "The Balance Sheet"
-    },
-    {
-      "type": "paragraph",
-      "text": "A snapshot of assets, liabilities, and equity at a point in time. Finance uses this to assess financial strength, leverage, and asset quality. A key financial concept: the balance sheet shows book value, which often differs dramatically from market value. Finance focuses on market value — what things are worth now."
-    },
-    {
-      "type": "heading",
-      "text": "The Cash Flow Statement"
-    },
-    {
-      "type": "paragraph",
-      "text": "Shows actual cash flowing in and out of the business from operations, investments, and financing. Finance considers this the MOST important financial statement — because cash pays bills, not profit. A company can show $10M in accounting profit and simultaneously be unable to pay its suppliers if cash flows are negative."
-    },
-    {
-      "type": "heading",
-      "text": "The Critical Difference"
-    },
-    {
-      "type": "paragraph",
-      "text": "Accounting answers: 'What happened?' Finance asks: 'What should we do next?' Accounting is backward-looking (records historical transactions) while finance is forward-looking (forecasts future cash flows and makes decisions based on them). Both are essential, but they serve fundamentally different purposes. How All Three Work Together in Practice In real decision-making, finance, economics, and accounting are deeply interconnected. Consider how they cooperate in a single corporate investment decision:"
-    },
-    {
-      "type": "heading",
-      "text": "Step Who Does It Tool Used What They Produce"
-    },
-    {
-      "type": "paragraph",
-      "text": "1. Gather historical data Accountants Financial statements Revenue, cost, and cash flow history 2. Forecast the economy Economists Macro models & indicators GDP growth, inflation, interest rate forecasts 3. Build cash flow projections Financial analysts Excel / financial models Projected cash flows over 5–10 years 4. Determine discount rateFinance team CAPM / WACC models Appropriate risk-adjusted discount rate 5. Calculate NPV Financial manager Discounted cash flow (DCF)Single number: invest or reject? 6. Report the decision Accountants Board presentations Financial rationale documented"
-    },
-    {
-      "type": "heading",
-      "text": "Figure 1.5 — The nested scope of Finance: from pricing assets to global market governance"
-    },
-    {
-      "type": "paragraph",
-      "text": "Feature Economics Accounting Finance Core Question How do markets & societies work? What happened financially? What should we do with money? Time Orientation Both past trends & future theory Primarily past (historical) Primarily future (decisions & forecasts) Primary Unit Prices, quantities, utility Transactions, balances Cash flows, value, risk Key Output Theories, policies, models Financial statements Valuations, investment decisions Measures Success By Welfare, efficiency, growth Accuracy, compliance, GAAP Value created (NPV, stock price) Uses Uncertainty? Yes — probability models No — records certain past facts Yes — central challenge of finance Typical Career Economist, policy analyst CPA, auditor, controller CFO, analyst, investment banker"
-    },
-    {
-      "type": "heading",
-      "text": "Key Terms Glossary"
-    },
-    {
-      "type": "paragraph",
-      "text": "All Important Definitions from Unit 1 Finance The discipline that studies how individuals, businesses, and governments raise, allocate, invest, and manage monetary resources over time, under conditions of certainty and uncertainty. Capital Financial assets or the monetary value of assets used to fund business activities. Can refer to physical capital (machines, buildings) or financial capital (money available for investment). Personal Finance The application of financial principles to individual and household decisions: budgeting, saving, investing, borrowing, insurance, and retirement planning. Corporate Finance The area of finance dealing with how corporations fund their activities (capital structure), make investment decisions (capital budgeting), and distribute returns to shareholders (dividends). Public Finance The study and practice of government revenue generation (taxation), expenditure allocation, and debt management at local, national, and international levels. Capital Budgeting The corporate finance process of evaluating and selecting long-term investment projects. Uses tools like NPV, IRR, and payback period to decide whether to invest. Capital Structure The mix of debt (bonds, bank loans) and equity (shares) a firm uses to finance its assets. The optimal structure minimizes the cost of capital while maintaining financial flexibility. Compound Interest Earning interest on previously earned interest. The mechanism by which wealth grows exponentially over time. A key reason why starting to save early dramatically increases lifetime wealth. Cash Flow The actual amount of money moving into or out of a business or investment. Finance focuses on cash flow rather than accounting profit, as cash is what pays bills and obligations. Opportunity Cost The value of the next best alternative forgone when making a choice. Every financial decision has an opportunity cost — what you gave up by not choosing the second-best option. Risk In finance, risk refers to the uncertainty or variability of future cash flows or returns. Higher risk demands higher expected return to compensate investors for bearing uncertainty. Return The gain or loss made on an investment, expressed as a percentage of the initial investment. Total return includes income (dividends, interest) plus capital gains (price appreciation). Scarcity The fundamental economic problem: unlimited human wants relative to limited resources. Scarcity is why finance exists — if money were unlimited, allocation decisions would be trivial. Time Value of Money The principle that a dollar available today is worth more than a dollar in the future, because money available now can be invested to earn a return. Discounting The process of converting future cash flows into their equivalent present value, using a discount rate that reflects the time value of money and investment risk. Net Present Value (NPV) The present value of all future cash inflows minus the initial investment cost. NPV > 0 means the investment creates value; NPV < 0 means it destroys value. Financial Statements Formal records of a company's financial activities. The three core statements are: Income Statement (profit/loss), Balance Sheet (assets/liabilities), and Cash Flow Statement. Market Value The current price at which an asset can be bought or sold in the market, determined by supply and demand. Often differs from book value (accounting value). Book Value The net value of an asset as recorded on the balance sheet: historical purchase cost minus accumulated depreciation. Reflects accounting rules, not necessarily economic reality. Intrinsic Value The true economic value of an asset or company, based on the present value of all expected future cash flows. The goal of valuation analysis is to estimate intrinsic value. Macroeconomics The branch of economics studying the economy as a whole: GDP, inflation, interest rates, unemployment, and monetary and fiscal policy. Microeconomics The branch of economics studying individual decision-makers — consumers, firms, and markets — including supply and demand, pricing, and market structure."
-    }
-  ]
+  ],
 };
 
 export const FINANCE_EN_LESSON_2: StructuredLesson = {
@@ -221,6 +195,26 @@ export const FINANCE_EN_LESSON_2: StructuredLesson = {
     {
       "type": "heading",
       "text": "2.1 Time Value of Money"
+    },
+    {
+      "type": "image",
+      "src": "/images/unit2/page_03.jpg",
+      "alt": "Unit 2 - Page 3"
+    },
+    {
+      "type": "image",
+      "src": "/images/unit2/page_04.jpg",
+      "alt": "Unit 2 - Page 4"
+    },
+    {
+      "type": "image",
+      "src": "/images/unit2/page_05.jpg",
+      "alt": "Unit 2 - Page 5"
+    },
+    {
+      "type": "image",
+      "src": "/images/unit2/page_06.jpg",
+      "alt": "Unit 2 - Page 6"
     },
     {
       "type": "paragraph",
@@ -237,6 +231,26 @@ export const FINANCE_EN_LESSON_2: StructuredLesson = {
     {
       "type": "heading",
       "text": "2.2 Present Value (PV)"
+    },
+    {
+      "type": "image",
+      "src": "/images/unit2/page_07.jpg",
+      "alt": "Unit 2 - Page 7"
+    },
+    {
+      "type": "image",
+      "src": "/images/unit2/page_08.jpg",
+      "alt": "Unit 2 - Page 8"
+    },
+    {
+      "type": "image",
+      "src": "/images/unit2/page_09.jpg",
+      "alt": "Unit 2 - Page 9"
+    },
+    {
+      "type": "image",
+      "src": "/images/unit2/page_10.jpg",
+      "alt": "Unit 2 - Page 10"
     },
     {
       "type": "paragraph",
@@ -283,6 +297,26 @@ export const FINANCE_EN_LESSON_2: StructuredLesson = {
       "text": "2.3 Future Value (FV)"
     },
     {
+      "type": "image",
+      "src": "/images/unit2/page_11.jpg",
+      "alt": "Unit 2 - Page 11"
+    },
+    {
+      "type": "image",
+      "src": "/images/unit2/page_12.jpg",
+      "alt": "Unit 2 - Page 12"
+    },
+    {
+      "type": "image",
+      "src": "/images/unit2/page_13.jpg",
+      "alt": "Unit 2 - Page 13"
+    },
+    {
+      "type": "image",
+      "src": "/images/unit2/page_14.jpg",
+      "alt": "Unit 2 - Page 14"
+    },
+    {
       "type": "paragraph",
       "text": "Future Value (FV) is the mirror image of Present Value. Where PV asks \"what is future money worth today?\", FV asks \"what will today's money be worth in the future?\" Future value is the mathematical engine behind compound interest — and understanding it is the key to building wealth over time. The Future Value Formula FV = PV × (1 + r)n — n WORKED EXAMPLE — WORKED EXAMPLE — Full FV Calculation Problem: You invest 5,000,000 UZS today at 12% per year. How much will you have in 5 years? Step 1: Identify inputs. PV = 5,000,000 r = 0.12 n = 5 Step 2: Calculate (1 + r)^n. (1.12)^5 = 1.12 × 1.12 × 1.12 × 1.12 × 1.12 = 1.7623 Step 3: Multiply PV by the growth factor. FV = 5,000,000 × 1.7623 = 8,811,709 UZS Your 5,000,000 UZS grows to 8,811,709 UZS in 5 years. The extra 3,811,709 UZS is the return on your investment — interest on interest. Simple Interest vs. Compound Interest Before going further, it is critical to understand the difference between simple and compound interest. They produce dramatically different outcomes, especially over long periods — and this difference is at the heart of why starting to invest early matters so much. Simple Interest With simple interest, you earn interest ONLY on the original amount (principal). No matter how long you invest, the interest earned each period is the same fixed amount. FV (Simple) = PV × (1 + r × n) Example: 1,000,000 UZS at 10% simple interest for 5 years. • Year 1: 1,000,000 + 100,000 = 1,100,000 UZS • Year 2: 1,100,000 + 100,000 = 1,200,000 UZS • Year 5: 1,000,000 × (1 + 0.10 × 5) = 1,500,000 UZS Growth is LINEAR — the same 100,000 UZS every year. Compound Interest With compound interest, you earn interest on your principal AND on all previously earned interest. Your interest earns interest. This creates exponential (accelerating) growth. FV (Compound) = PV × (1 + r)n Example: 1,000,000 UZS at 10% compound interest for 5 years. • Year 1: 1,000,000 × 1.10 = 1,100,000 UZS (interest: 100,000) • Year 2: 1,100,000 × 1.10 = 1,210,000 UZS (interest: 110,000) • Year 3: 1,210,000 × 1.10 = 1,331,000 UZS (interest: 121,000) • Year 5: 1,000,000 × (1.10)n = 1,610,510 UZS Growth is EXPONENTIAL — the interest earned each year is LARGER than the year before, because it compounds on a larger and larger base. Feature Simple Interest Compound Interest Formula FV = PV × (1 + r × n) FV = PV × (1 + r)^n Interest earned on Original principal only Principal + all accumulated interest Growth pattern Linear (straight line) Exponential (curves upward) 1M at 10% for 10 years 2,000,000 UZS 2,593,742 UZS 1M at 10% for 20 years 3,000,000 UZS 6,727,500 UZS 1M at 10% for 30 years 4,000,000 UZS 17,449,402 UZS 1M at 10% for 40 years 5,000,000 UZS 45,259,256 UZS"
     },
@@ -297,6 +331,26 @@ export const FINANCE_EN_LESSON_2: StructuredLesson = {
     {
       "type": "heading",
       "text": "2.4 Opportunity Cost of Capital"
+    },
+    {
+      "type": "image",
+      "src": "/images/unit2/page_15.jpg",
+      "alt": "Unit 2 - Page 15"
+    },
+    {
+      "type": "image",
+      "src": "/images/unit2/page_16.jpg",
+      "alt": "Unit 2 - Page 16"
+    },
+    {
+      "type": "image",
+      "src": "/images/unit2/page_17.jpg",
+      "alt": "Unit 2 - Page 17"
+    },
+    {
+      "type": "image",
+      "src": "/images/unit2/page_18.jpg",
+      "alt": "Unit 2 - Page 18"
     },
     {
       "type": "paragraph",
@@ -315,12 +369,42 @@ export const FINANCE_EN_LESSON_2: StructuredLesson = {
       "text": "2.5 Valuation of Assets"
     },
     {
+      "type": "image",
+      "src": "/images/unit2/page_19.jpg",
+      "alt": "Unit 2 - Page 19"
+    },
+    {
+      "type": "image",
+      "src": "/images/unit2/page_20.jpg",
+      "alt": "Unit 2 - Page 20"
+    },
+    {
+      "type": "image",
+      "src": "/images/unit2/page_21.jpg",
+      "alt": "Unit 2 - Page 21"
+    },
+    {
+      "type": "image",
+      "src": "/images/unit2/page_22.jpg",
+      "alt": "Unit 2 - Page 22"
+    },
+    {
       "type": "paragraph",
       "text": "Valuation is the process of determining what an asset is actually worth today. It is one of the most important skills in all of finance — whether you are buying a stock, a property, a business, or a bond, you need to know: is the price being asked fair, too high, or too low? The universal principle of valuation: Any asset is worth the present value of all the future cash flows it will generate for its owner. This single sentence contains the entire theory of valuation. Everything else is detail. Value of Any Asset = PV of All Future Cash Flows Net Present Value (NPV) Net Present Value is the most important valuation tool in finance. NPV answers the question: \"If I invest money today and receive cash flows in the future, am I better off than if I had invested at my opportunity cost rate?\" NPV is calculated by taking the present value of all future cash flows from an investment and subtracting the initial cost: NPV = ∑ [CFt ÷ (1 + r)t] − Initial Investment Where CFn is the cash flow in period t, r is the discount rate (opportunity cost of capital), and t runs from period 1 to the end of the investment. NPV Result What It Means What You Should Do NPV > 0 (Positive) Investment returns MORE than your opportunity cost rate 3 ACCEPT — creates value NPV = 0 (Zero) Investment returns EXACTLY your opportunity cost rate Indifferent — break even NPV < 0 (Negative) Investment returns LESS than your opportunity cost rate 7 REJECT — destroys value — n WORKED EXAMPLE — WORKED EXAMPLE — NPV of a Business Investment Scenario: You can buy a small shop for 50,000,000 UZS. The shop will generate the following annual profits (after all costs): Year 1: 8,000,000 UZS Year 2: 10,000,000 UZS Year 3: 12,000,000 UZS Year 4: 12,000,000 UZS Year 5: 15,000,000 UZS + sale of shop for 40,000,000 UZS = 55,000,000 UZS Your discount rate (opportunity cost): 15% per year PV of Year 1: 8,000,000 ÷ 1.15 = 6,956,522 PV of Year 2: 10,000,000 ÷ 1.3225 = 7,561,437 PV of Year 3: 12,000,000 ÷ 1.5209 = 7,890,257 PV of Year 4: 12,000,000 ÷ 1.7490 = 6,861,963 PV of Year 5: 55,000,000 ÷ 2.0114 = 27,344,481 Total PV = 6,956,522 + 7,561,437 + 7,890,257 + 6,861,963 + 27,344,481 = 56,614,660 UZS NPV = 56,614,660 − 50,000,000 = +6,614,660 UZS Decision: NPV is POSITIVE — this investment creates 6.6M UZS of value above the opportunity cost. ACCEPT. Valuing Stocks A share of stock represents ownership in a company. Its value equals the present value of all future dividends plus the eventual sale price. In practice, analysts use several approaches: • Dividend Discount Model: Value = Dividend ÷ (Discount Rate − Dividend Growth Rate). Used for stable dividend-paying companies. Example: A company pays 5,000 UZS dividend per share, expected to grow 4% per year. If your discount rate is 14%, value = 5,000 ÷ (0.14 − 0.04) = 50,000 UZS per share. • Price-to-Earnings (P/E) Ratio: Stock Price ÷ Earnings Per Share. A quick comparison tool. If the market average P/E is 15 and a company earns 10,000 UZS per share, a \"fair\" price is approximately 150,000 UZS. A stock trading below this is potentially undervalued. • Discounted Cash Flow (DCF): Projects the company's free cash flows for 5–10 years, then discounts them back to the present. The most rigorous method, used by professional analysts. Valuing Bonds A bond is a loan you make to a company or government. In return, they promise to pay you fixed interest (coupon) payments at regular intervals, plus repay the principal at maturity. The value of a bond is simply the PV of all these future cash flows. • Coupon payments: Fixed interest paid periodically (e.g., 8% of face value per year). • Face value (principal): Repaid at the end of the bond's life (e.g., 1,000,000 UZS in 5 years). • Critical rule: When market interest rates RISE, existing bond prices FALL — because the fixed future payments are now discounted at a higher rate, reducing their PV. When rates FALL, bond prices RISE. Valuing Real Estate Real estate generates value through rental income and property appreciation. The two main valuation approaches are: • Income Approach: Value = Annual Net Rental Income ÷ Capitalization Rate. The \"cap rate\" is similar to a discount rate for property. Example: An apartment generates 24,000,000 UZS net per year. If the cap rate is 8%, value = 24,000,000 ÷ 0.08 = 300,000,000 UZS. • Comparable Sales Approach: Value based on recent prices of similar properties in the same area. Most commonly used in residential real estate. — n WORKED EXAMPLE — WORKED EXAMPLE — Real Estate Valuation Apartment in Tashkent: purchase price 200,000,000 UZS. Annual rental income: 20,000,000 UZS. Annual expenses: 2,000,000 UZS. Net income: 18,000,000 UZS per year. Expected sale price after 10 years: 350,000,000 UZS. Your required return: 12% per year. PV of rental income (10 years at 12%): Using annuity formula: 18,000,000 × [(1 − (1.12)^{-10}) ÷ 0.12] = 18,000,000 × 5.650 = 101,700,000 UZS PV of sale price: 350,000,000 ÷ (1.12)^{10} = 350,000,000 ÷ 3.1058 = 112,700,000 UZS Total Value = 101,700,000 + 112,700,000 = 214,400,000 UZS NPV = 214,400,000 − 200,000,000 = +14,400,000 UZS Decision: The apartment is worth MORE than it costs — a positive NPV investment. Buy it."
     },
     {
       "type": "heading",
       "text": "2.6 Risk & Return"
+    },
+    {
+      "type": "image",
+      "src": "/images/unit2/page_23.jpg",
+      "alt": "Unit 2 - Page 23"
+    },
+    {
+      "type": "image",
+      "src": "/images/unit2/page_24.jpg",
+      "alt": "Unit 2 - Page 24"
     },
     {
       "type": "paragraph",

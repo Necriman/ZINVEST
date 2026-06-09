@@ -54,4 +54,8 @@ next-env.d.ts
 
 .vercel
 
-.vercel
+# dev/debug screenshots & scripts (not part of the app)
+/ss-*.png
+/screenshot-*.png
+/screenshot.cjs
+/screenshot.mjs

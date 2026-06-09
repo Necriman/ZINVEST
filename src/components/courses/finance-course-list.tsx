@@ -77,7 +77,7 @@ export function FinanceCourseList() {
       FINANCE_LESSON_IDS.map((id) => ({
         id,
         title: getFinanceStructuredLesson(id, language).title,
-        duration: id === 1 ? "~45 min" : "~50 min",
+        duration: id === 1 ? "~45 min" : id === 2 ? "~50 min" : id === 3 ? "~40 min" : "~45 min",
       })),
     [language],
   );

@@ -1,9 +1,9 @@
-"use client";
+﻿"use client";
 
 import React from "react";
 import { motion } from "framer-motion";
-import { useInView } from "react-intersection-observer";
 import { Star } from "lucide-react";
+import { staggerContainer, slideUpVariants, viewportOnce, useReducedMotion } from "@/lib/motion";
 
 const TESTIMONIALS = [
   {
@@ -19,12 +19,11 @@ const TESTIMONIALS = [
 ];
 
 export default function Testimonials() {
-  const [ref, inView] = useInView({ triggerOnce: true, threshold: 0.12 });
+  const reducedMotion = useReducedMotion();
 
   return (
     <section
-      ref={ref}
-      className="relative overflow-hidden bg-white dark:bg-[#0a0f1c] px-4 py-16 sm:px-6 sm:py-24"
+      className="relative overflow-hidden bg-[var(--bg-card)] px-4 py-16 sm:px-6 sm:py-24"
       aria-labelledby="testimonials-heading"
     >
       <div className="pointer-events-none absolute inset-0">
@@ -34,9 +33,10 @@ export default function Testimonials() {
 
       <div className="relative mx-auto max-w-7xl">
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={inView ? { opacity: 1, y: 0 } : {}}
-          transition={{ duration: 0.45 }}
+          initial="hidden"
+          whileInView="visible"
+          viewport={viewportOnce}
+          variants={slideUpVariants(0, 0.45)}
           className="mb-14 text-center md:text-left"
         >
           <h2
@@ -50,15 +50,28 @@ export default function Testimonials() {
           </p>
         </motion.div>
 
-        <div className="grid gap-6 md:grid-cols-2">
-          {TESTIMONIALS.map((item, idx) => (
+        <motion.div
+          className="grid gap-6 md:grid-cols-2"
+          initial="hidden"
+          whileInView="visible"
+          viewport={viewportOnce}
+          variants={reducedMotion ? undefined : staggerContainer(0.15)}
+        >
+          {TESTIMONIALS.map((item) => (
             <motion.article
               key={item.name}
-              initial={{ opacity: 0, y: 24 }}
-              animate={inView ? { opacity: 1, y: 0 } : {}}
-              transition={{ duration: 0.45, delay: 0.1 + idx * 0.08 }}
-              className="group rounded-[22px] border border-[var(--border)] bg-[var(--bg-primary)] p-6 shadow-[var(--shadow)] backdrop-blur-sm transition-all duration-300 hover:border-blue-200 hover:bg-[var(--bg-secondary)]"
+              variants={slideUpVariants(0, 0.45)}
+              whileHover={reducedMotion ? undefined : { rotateY: 2, rotateX: -1, scale: 1.01 }}
+              transition={{ type: 'spring', stiffness: 300, damping: 20 }}
+              style={{ transformStyle: 'preserve-3d', perspective: 1000 }}
+              className="group rounded-[22px] border border-[var(--border)] bg-[var(--bg-primary)] p-6 shadow-[var(--shadow)] backdrop-blur-sm transition-[border-color,box-shadow] duration-200 ease-out hover:border-blue-500/35 hover:shadow-[var(--shadow-md)]"
             >
+              <span
+                aria-hidden
+                className="mb-2 block text-4xl leading-none text-[var(--text-muted)] transition-colors duration-200 group-hover:text-[var(--accent)]"
+              >
+                &ldquo;
+              </span>
               <div className="mb-4 flex items-center gap-3">
                 <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-white/10 bg-gradient-to-br from-blue-500/20 to-purple-500/15 text-sm font-semibold text-blue-100 transition-transform duration-300 group-hover:scale-[1.03]">
                   {item.initials}
@@ -79,7 +92,7 @@ export default function Testimonials() {
               <p className="text-sm leading-relaxed text-[var(--text-secondary)]">&ldquo;{item.text}&rdquo;</p>
             </motion.article>
           ))}
-        </div>
+        </motion.div>
       </div>
     </section>
   );
