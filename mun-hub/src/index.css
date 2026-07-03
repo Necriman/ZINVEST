@@ -1,0 +1,61 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    @apply bg-night-950 font-sans text-slate-300 antialiased;
+  }
+
+  ::selection {
+    @apply bg-indigo-500/40 text-white;
+  }
+
+  /* Consistent, visible keyboard focus everywhere (a11y) */
+  :focus-visible {
+    @apply outline-none ring-2 ring-indigo-400/70 ring-offset-2 ring-offset-night-950;
+  }
+}
+
+@layer components {
+  /* The one glassmorphism recipe used across the app — keeps elevation consistent */
+  .glass {
+    @apply border border-white/[0.08] bg-white/[0.04] backdrop-blur-xl;
+  }
+
+  .glass-hover {
+    @apply transition-colors duration-300 hover:border-white/[0.16] hover:bg-white/[0.06];
+  }
+}
+
+/* Faint blueprint grid behind the hero, fading out towards the fold */
+.bg-grid {
+  background-image:
+    linear-gradient(rgba(148, 163, 184, 0.06) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(148, 163, 184, 0.06) 1px, transparent 1px);
+  background-size: 56px 56px;
+  -webkit-mask-image: radial-gradient(ellipse 90% 65% at 50% 0%, black 35%, transparent 100%);
+  mask-image: radial-gradient(ellipse 90% 65% at 50% 0%, black 35%, transparent 100%);
+}
+
+/* Thin scrollbar that matches the dark canvas */
+::-webkit-scrollbar {
+  width: 10px;
+}
+::-webkit-scrollbar-track {
+  background: #030509;
+}
+::-webkit-scrollbar-thumb {
+  background: #1e293b;
+  border-radius: 8px;
+  border: 2px solid #030509;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #334155;
+}
